@@ -1,4 +1,9 @@
 from flask import Flask
-app = Flask(__name__)
+from config import Configuration
+from flask_sqlalchemy import SQLAlchemy
 
-from app import routes
+app = Flask(__name__)
+app.config.from_object(Configuration)
+db = SQLAlchemy(app)
+
+from app import routes, dbmodels
