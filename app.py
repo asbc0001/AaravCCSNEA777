@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 #from sqlalchemy.orm import DeclarativeBase
 
@@ -28,4 +28,4 @@ with app.app_context():
 
 @app.route("/")
 def index():
-    return "Hello"
+    return render_template('index.html', title='Home')
