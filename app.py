@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -21,6 +21,7 @@ db.init_app(app)
 class User(db.Model):
     user_id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(unique = True)
+    password_has: Mapped[str]
     
     def __repr__(self):
         return f'<Users {self.username}>'
@@ -31,11 +32,15 @@ class LoginForm(FlaskForm):
   remember_me=BooleanField('Remember Me')
   submit = SubmitField('Sign In')
 
-@app.route("/")
+@app.route('/')
+@app.route('/index')
 def index():
     return render_template('index.html', title='Home')
   
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
+    if form.validate_on_submit():
+      flash('Login requested for user {}, remember_me={}'.format(form.email.data, form.remember_me.data))
+      return redirect(url_for('index'))
     return render_template('login.html', title='Sign In', form=form)
