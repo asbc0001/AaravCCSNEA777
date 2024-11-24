@@ -1,30 +1,31 @@
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-#from sqlalchemy.orm import DeclarativeBase
-
+from sqlalchemy import Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 import os
 
 basedirectory = os.path.abspath(os.path.dirname(__file__))
 
-class Configuration:
-    #need to add secret key variable thing
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedirectory, 'tracker.db')
-    
-app = Flask(__name__)
-app.config.from_object(Configuration)
-db = SQLAlchemy(app)
+class Base(DeclarativeBase):
+  pass
 
-class Users(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable = False)
-    email = db.Column(db.String(200), nullable = False)
+db = SQLAlchemy(model_class=Base)
+
+app = Flask(__name__)
+#app.config['SECRET_KEY'] = 
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedirectory, 'tracker.db')
+db.init_app(app)
+
+class User(db.Model):
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+    #username = db.Column(db.String(100), nullable = False)
+    username: Mapped[str] = mapped_column(unique = True)
+    #email = db.Column(db.String(200), nullable = False)
+    email: Mapped[str] = mapped_column(unique = True)
     
     def __repr__(self):
         return f'<Users {self.username}>'
 
-with app.app_context():
-    db.create_all()
-    ### change to if not exists instead? check what grinberg does here, whether to just use flask shell instead
 
 @app.route("/")
 def index():
