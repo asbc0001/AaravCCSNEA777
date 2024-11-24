@@ -2,28 +2,40 @@ from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.validators import DataRequired
 import os
-
-basedirectory = os.path.abspath(os.path.dirname(__file__))
 
 class Base(DeclarativeBase):
   pass
-
 db = SQLAlchemy(model_class=Base)
 
+basedirectory = os.path.abspath(os.path.dirname(__file__))
+
 app = Flask(__name__)
-#app.config['SECRET_KEY'] = 
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-wont-ever-guess'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedirectory, 'tracker.db')
 db.init_app(app)
 
 class User(db.Model):
     user_id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique = True)
     email: Mapped[str] = mapped_column(unique = True)
     
     def __repr__(self):
         return f'<Users {self.username}>'
+      
+class LoginForm(FlaskForm):
+  email = StringField('Email address', validators=[DataRequired()])
+  password = StringField('Password', validators=[DataRequired()])
+  remember_me=BooleanField('Remember Me')
+  submit = SubmitField('Sign In')
 
 @app.route("/")
 def index():
     return render_template('index.html', title='Home')
+  
+@app.route('/login')
+def login():
+    form = LoginForm()
+    return render_template('login.html', title='Sign In', form=form)
