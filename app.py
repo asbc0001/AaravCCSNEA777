@@ -18,14 +18,11 @@ db.init_app(app)
 
 class User(db.Model):
     user_id: Mapped[int] = mapped_column(primary_key=True)
-    #username = db.Column(db.String(100), nullable = False)
     username: Mapped[str] = mapped_column(unique = True)
-    #email = db.Column(db.String(200), nullable = False)
     email: Mapped[str] = mapped_column(unique = True)
     
     def __repr__(self):
         return f'<Users {self.username}>'
-
 
 @app.route("/")
 def index():
