@@ -32,6 +32,9 @@ class User(db.Model):
     # Define relationship to Bodyweight model
     bodyweights: sa.orm.Mapped[list["Bodyweight"]] = sa.orm.relationship(back_populates="user")
     
+    # Define relationship to Exercise model
+    exercises: sa.orm.Mapped[list["Exercise"]] = sa.orm.relationship(back_populates="user")
+    
     # Method for providing string representation (email) of the User instance for debugging/logging purposes
     def __repr__(self):
         return f"<User {self.email}>"
@@ -50,6 +53,20 @@ class Bodyweight(db.Model):
     # Displays data about a Bodyweight entry for debugging / logging purposes
     def __repr__(self):
         return f"<Bodyweight {self.weight} {self.user.bodyweight_unit} on {self.date} for User {self.user_id}>"
+ 
+# Model to define structure of the database Exercise table
+class Exercise(db.Model):
+    exercise_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
+    name: sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(50))
+    category:sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(10))
+    user_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, sa.ForeignKey("user.user_id"))
+    
+    # Define relationship to User model
+    user: sa.orm.Mapped[User] = sa.orm.relationship(back_populates="exercises")
+    
+    # Display data about an Exercise entry for debugging / logging purposes
+    def __repr__(self):
+        return f"<Exercise {self.name} for User {self.user_id}>"
 
 # Generic route for testing that the Flask application works
 @app.route('/')
