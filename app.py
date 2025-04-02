@@ -35,6 +35,9 @@ class User(db.Model):
     # Define relationship to Exercise model
     exercises: sa.orm.Mapped[list["Exercise"]] = sa.orm.relationship(back_populates="user")
     
+    # Define relationship to Goal model
+    goals: sa.orm.Mapped[list["Goal"]] = sa.orm.relationship(back_populates="user")
+    
     # Method for providing string representation (email) of the User instance for debugging/logging purposes
     def __repr__(self):
         return f"<User {self.email}>"
@@ -64,9 +67,30 @@ class Exercise(db.Model):
     # Define relationship to User model
     user: sa.orm.Mapped[User] = sa.orm.relationship(back_populates="exercises")
     
+    # Define relationship to Goal model
+    goals: sa.orm.Mapped[list["Goal"]] = sa.orm.relationship(back_populates="exercise", cascade="all, delete")
+    
     # Display data about an Exercise entry for debugging / logging purposes
     def __repr__(self):
         return f"<Exercise {self.name} for User {self.user_id}>"
+
+# Model to define structure of the database Goal table    
+class Goal(db.Model):
+    goal_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
+    target: sa.orm.Mapped[float] = sa.orm.mapped_column(sa.Float)
+    date_entered: sa.orm.Mapped[datetime.date] = sa.orm.mapped_column(sa.Date)
+    user_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, sa.ForeignKey("user.user_id"))
+    exercise_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, sa.ForeignKey("exercise.exercise_id"))
+    
+    # Define relationship to User model
+    user: sa.orm.Mapped[User] = sa.orm.relationship(back_populates="goals")
+    
+    # Define relationship to Exercise model
+    exercise: sa.orm.Mapped[Exercise] = sa.orm.relationship(back_populates="goals")
+    
+    # Display data about a Goal entry for debugging / logging purposes
+    def __repr__(self):
+        return f"<Goal {self.target} for Exercise {self.exercise_id} for User {self.user_id}>"
 
 # Generic route for testing that the Flask application works
 @app.route('/')
