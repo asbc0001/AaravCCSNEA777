@@ -1,0 +1,19 @@
+/* Stylesheet for the workout tracker */
+
+        /* Main Navbar Styling */
+        .navbar-dark {
+            background-color: #a6abb042; /* Dark background color */
+        }
+
+        .bg-dark {
+            background-color: #0080ff42; /* Dark background color */
+        }
+
+        .navbar-nav .nav-item .nav-link.active {
+            color: #007bff;
+        }
+
+        /* Styling for inactive nav items */
+        .navbar-nav .nav-item .nav-link:hover {
+            color: #007bff;
+        }
