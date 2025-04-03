@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy as sa
 from typing import List
@@ -144,14 +144,14 @@ def Change_Password():
 @app.route('/')
 @app.route('/workouts')
 def Workouts():
-    return "Workouts"
+    return render_template("layout.html")
 
 @app.route('/exercises')
 def Exercises():
     return "Exercises"
 
 @app.route('/exercise_graph')
-def Workout_Graph():
+def Exercise_Graph():
     return "Exercise graph"
 
 @app.route('/workout_graph')
