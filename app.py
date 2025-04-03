@@ -152,7 +152,7 @@ def Exercises():
 
 @app.route('/exercise_graph')
 def Exercise_Graph():
-    return "Exercise graph"
+    return render_template("exercise_graph.html")
 
 @app.route('/workout_graph')
 def Workout_Graph():
