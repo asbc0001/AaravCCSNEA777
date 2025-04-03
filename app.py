@@ -22,6 +22,8 @@ db = SQLAlchemy(app)
 
 # Model to define the structure of the database user table
 class User(db.Model):
+    __tablename__ = "user"
+    
     user_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
     email: sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(120), unique=True)
     password_hash: sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(255))
@@ -59,7 +61,7 @@ class Bodyweight(db.Model):
     # Displays data about a Bodyweight entry for debugging / logging purposes
     def __repr__(self):
         return f"<Bodyweight {self.weight} on {self.date} for User {self.user_id}>"
- 
+
 # Model to define structure of the database exercise table
 class Exercise(db.Model):
     exercise_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
@@ -73,7 +75,7 @@ class Exercise(db.Model):
     # Define relationship to Goal model
     goals: sa.orm.Mapped[list["Goal"]] = sa.orm.relationship(back_populates="exercise", cascade="all, delete")
     
-    #Define relationship to Set model
+    # Define relationship to Set model
     sets: sa.orm.Mapped[list["Set"]] = sa.orm.relationship(back_populates="exercise", cascade="all, delete")
     
     # Display data about an Exercise entry for debugging / logging purposes
@@ -118,8 +120,64 @@ class Set(db.Model):
     def __repr__(self):
         return f"<Weight {self.weight} for reps {self.reps} on date {self.date} for exercise {self.exercise_id} for User {self.user_id}>"
 
-# Generic route for testing that the Flask application works
-@app.route('/')
-def index():
-    return "Hello"
+# Temporary placeholder versions of each route to allow navigation bar to be implemented
+@app.route('/register')
+def Register():
+    return "Register"
 
+@app.route('/login')
+def Login():
+    return "Login"
+
+@app.route('/logout')
+def Logout():
+    return "Logout"
+
+@app.route('/reset_password')
+def Reset_Password():
+    return "Reset Password"
+
+@app.route('/change_password')
+def Change_Password():
+    return "Change password"
+
+@app.route('/')
+@app.route('/workouts')
+def Workouts():
+    return "Workouts"
+
+@app.route('/exercises')
+def Exercises():
+    return "Exercises"
+
+@app.route('/exercise_graph')
+def Workout_Graph():
+    return "Exercise graph"
+
+@app.route('/workout_graph')
+def Workout_Graph():
+    return "Workout graph"
+
+@app.route('/workout_chart')
+def Workout_Chart():
+    return "Workout chart"
+
+@app.route('/bodyweight')
+def Bodyweights():
+    return "Bodyweight"
+
+@app.route('/bodyweight_graph')
+def Bodyweight_Graph():
+    return "Bodyweight graph"
+
+@app.route('/settings')
+def Settings():
+    return "Settings"
+
+@app.route('/goals')
+def Goals():
+    return "Goals"
+
+@app.route('/1rm_prediction')
+def Prediction():
+    return "1RM Prediction"
