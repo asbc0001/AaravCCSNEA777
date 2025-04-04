@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy as sa
 from typing import List
@@ -142,6 +142,10 @@ def Change_Password():
     return "Change password"
 
 @app.route('/')
+@app.route('/index')
+def Index():
+    return redirect('/workouts')
+
 @app.route('/workouts')
 def Workouts():
     return render_template("layout.html")
