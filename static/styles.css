@@ -5,19 +5,54 @@
             background-color: #7c7a7a; 
         }
 
-        .navbar-nav .nav-item .nav-link.active {
-            color: #007bff;
-        }
+        /* Styling for active navbar items (ie current page / section) */
+        .nav-item.active a {
+            text-decoration: underline;
+            text-decoration-color: #006bdd;
+            text-decoration-thickness: 2px;
+          }
 
-        /* Styling for inactive nav items */
+        /* Styling for hover effect on navbar items */
         .navbar-nav .nav-item .nav-link:hover {
-            color: #007bff;
+            color: #4fa4ff;
         }
 
-        .navbar a{
-            color:#fff2f2;
+        /* Default text color for all navbar items */
+        .navbar a {
+            color: #fff2f2;
         }
 
-        .active {
-            color:#ff00c3;
+
+        /* Prevent the dropdown toggle from changing color */
+        .nav-link.dropdown-toggle {
+            color: #fff2f2 !important;
+        }
+
+        .nav-link.dropdown-toggle.active {
+            text-decoration: underline;
+            text-decoration-color: #006bdd;
+            text-decoration-thickness: 2px;
+        }
+
+        .dropdown-menu {
+            background-color: #7c7a7a; 
+            border: 1px solid #4fa4ff;
+        }
+
+        .dropdown-menu .dropdown-item {
+            color: #fff2f2;
+        }
+
+        /* Change the color when hovering over dropdown items */
+        .dropdown-menu .dropdown-item:hover {
+            color: #4fa4ff;
+            background-color: #7c7a7a; 
+        }
+
+        /* Change the color of the active dropdown item */
+        .dropdown-menu .dropdown-item.active {
+            background-color: #7c7a7a; 
+            text-decoration: underline;
+            text-decoration-color: #006bdd;
+            text-decoration-thickness: 2px;
         }

@@ -1,3 +1,4 @@
+<!-- Base template from which other templates will extend-->
 <!doctype html>
 <html lang="en">
 
@@ -20,65 +21,71 @@
 
 <body>
     <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+        <div class="container-fluid">
+            <!-- Navbar Toggler Button for Collapsing the Navbar on Small Screens -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="mainNavbar">
+            <!-- Collapsible navbar -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Navbar content for authenticated users-->
+                <!-- Left side tabs -->
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item {% if request.endpoint == 'workouts' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Workouts') }}">Workouts</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'exercises' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Exercises') }}">Exercises</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'Exercise_Graph' or request.endpoint == 'Workout_Graph' or request.endpoint == 'Workout_Chart' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Exercise_Graph') }}">Analysis</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'bodyweight' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Bodyweights') }}">Bodyweight</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'goals' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Goals') }}">Goals</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Settings') }}">Settings</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('Logout') }}">Logout</a>
-                        </li>
+                    <li class="nav-item {% if request.endpoint == 'Workouts' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('Workouts') }}">Workouts</a>
+                    </li>
+                    <li class="nav-item {% if request.endpoint == 'Exercises' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('Exercises') }}">Exercises</a>
+                    </li>
+                    <!-- Dropdown menu for Analysis section pages -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if request.endpoint == 'Exercise_Graph' or request.endpoint == 'Workout_Graph' or request.endpoint == 'Workout_Chart' %}active{% endif %} dropdown-toggle" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Analysis
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item {% if request.endpoint == 'Exercise_Graph'%}active{% endif %}" href="{{ url_for('Exercise_Graph') }}">Exercise Graph</a>
+                            <a class="dropdown-item {% if request.endpoint == 'Workout_Graph'%}active{% endif %}" href="{{ url_for('Workout_Graph') }}">Workout Graph</a>
+                            <a class="dropdown-item {% if request.endpoint == 'Workout_Chart'%}active{% endif %}" href="{{ url_for('Workout_Chart') }}">Workout Breakdown Chart</a>
+                        </div>
+                    </li>
+                    <!-- Dropdown menu for Bodyweight section pages -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if request.endpoint == 'Bodyweights' or request.endpoint == 'Bodyweight_Graph' %}active{% endif %} dropdown-toggle" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Bodyweight
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item {% if request.endpoint == 'Bodyweights'%}active{% endif %}" href="{{ url_for('Bodyweights') }}">Track Bodyweight</a>
+                            <a class="dropdown-item {% if request.endpoint == 'Bodyweight_Graph'%}active{% endif %}" href="{{ url_for('Bodyweight_Graph') }}">Bodyweight Graph</a>
+                        </div>
+                    </li>
+                    <li class="nav-item {% if request.endpoint == 'Goals' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('Goals') }}">Goals</a>
+                    </li>
+                    <li class="nav-item {% if request.endpoint == 'Prediction' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('Prediction') }}">1RM Prediction</a>
+                    </li>
                 </ul>
+                <!-- Right side tabs -->
+                <ul class="navbar-nav">
+                    <li class="nav-item {% if request.endpoint == 'Settings' %}active{% endif %}">
+                      <a class="nav-link" href="{{ url_for('Settings') }}">Settings</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('Logout') }}">Logout</a>
+                    </li>
+                </ul>
+
             </div>
+
         </div>
     </nav>
     
-    
+    <!--Main content for the page-->
+    <main class="container-fluid text-center"></main>
+            {% block main %}{% endblock %} <!-- Jinja placeholder which other templates will extend-->
+    </main>
 
 </body>
 
 </html>
 
-<!-- Sub Navbar for "Analysis" -->
- <!--
-{% if request.endpoint in ['exercise_graph', 'workout_graph', 'workout_breakdown'] %}
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#subNavbar">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="subNavbar">
-            <ul class="navbar-nav">
-                <li class="nav-item {% if request.endpoint == 'exercise_graph' %}active{% endif %}">
-                    <a class="nav-link" href="{{ url_for('Exercise_Graph') }}">Exercise Graph</a>
-                </li>
-                <li class="nav-item {% if request.endpoint == 'workout_graph' %}active{% endif %}">
-                    <a class="nav-link" href="{{ url_for('Workout_Graph') }}">Workout Graph</a>
-                </li>
-                <li class="nav-item {% if request.endpoint == 'workout_breakdown' %}active{% endif %}">
-                    <a class="nav-link" href="{{ url_for('Workout_Chart') }}">Workout Breakdown Chart</a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-{% endif %}-->

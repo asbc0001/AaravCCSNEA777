@@ -1,81 +1,9 @@
-<!doctype html>
-<html lang="en">
+{% extends "layout.html" %} <!--This page's content extends from the placeholder defined in layout.html-->
 
-<head>
-    <!--Specify character set as UTF-8-->
-    <meta charset="utf-8">
-    <!--Ensure the page scales correctly to fit the device width-->
-    <meta name="viewport" content="initial-scale=1, width=device-width">
+{% block title %} <!--Specify the page title to be shown in the browser tab-->
+    Exercise Graph
+{% endblock %}
 
-    <!--Include Bootstrap CSS and JS-->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.4/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-DQvkBjpPgn7RC31MCQoOeC9TI2kdqa4+BSgNMNj8v77fdC77Kj5zpWFTJaaAoMbC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.4/dist/js/bootstrap.bundle.min.js" integrity="sha384-YUe2LzesAfftltw+PEaao2tjU/QATaW/rOitAq67e0CT0Zi2VVRL0oC4+gAaeBKu" crossorigin="anonymous"></script>
-
-    <!--Link to CSS stylesheet-->
-    <link href="/static/styles.css" rel="stylesheet">
-
-    <!--Set title shown in browser tab-->
-    <title>AC's Tracker: {% block title %}{% endblock %}</title>
-</head>
-
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="mainNavbar">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item {% if request.endpoint == 'workouts' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Workouts') }}">Workouts</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'exercises' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Exercises') }}">Exercises</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'exercise_graph' or request.endpoint == 'workout_graph' or request.endpoint == 'workout_breakdown' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Exercise_Graph') }}">Analysis</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'bodyweight' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Bodyweights') }}">Bodyweight</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'goals' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Goals') }}">Goals</a>
-                        </li>
-                        <li class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('Settings') }}">Settings</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('Logout') }}">Logout</a>
-                        </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Sub Navbar for "Analysis" -->
-    {% if request.endpoint in ['Exercise_Graph', 'Workout_Graph', 'Workout_Chart'] %}
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#subNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="subNavbar">
-                <ul class="navbar-nav">
-                    <li class="nav-item {% if request.endpoint == 'exercise_graph' %}active{% endif %}">
-                        <a class="nav-link" href="{{ url_for('Exercise_Graph') }}">Exercise Graph</a>
-                    </li>
-                    <li class="nav-item {% if request.endpoint == 'workout_graph' %}active{% endif %}">
-                        <a class="nav-link" href="{{ url_for('Workout_Graph') }}">Workout Graph</a>
-                    </li>
-                    <li class="nav-item {% if request.endpoint == 'workout_breakdown' %}active{% endif %}">
-                        <a class="nav-link" href="{{ url_for('Workout_Chart') }}">Workout Breakdown Chart</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    {% endif %}
-
-</body>
-
-</html>
+{% block main %}
+    Exercise Graph page
+{% endblock %}
