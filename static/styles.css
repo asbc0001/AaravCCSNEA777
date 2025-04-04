@@ -34,6 +34,7 @@
             text-decoration-thickness: 2px;
         }
 
+        /* Change the style of the drop-down menu */
         .dropdown-menu {
             background-color: #7c7a7a; 
             border: 1px solid #4fa4ff;
@@ -56,3 +57,5 @@
             text-decoration-color: #006bdd;
             text-decoration-thickness: 2px;
         }
+
+

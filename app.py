@@ -148,7 +148,7 @@ def Index():
 
 @app.route('/workouts')
 def Workouts():
-    return render_template("layout.html")
+    return render_template("workouts.html")
 
 @app.route('/exercises')
 def Exercises():
