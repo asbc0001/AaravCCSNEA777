@@ -58,4 +58,34 @@
             text-decoration-thickness: 2px;
         }
 
+        /* Positive Flashed Message */
+        .alert-positive {
+            background-color: #60ff85; 
+            border-color: #00ab28;
+            text-align: center;
+            padding: 0.3rem 0.6rem; 
+            margin-bottom: 0;
+            width: auto;
+            max-width: 100%;
+        }
 
+        /* Negative Flashed Message */
+        .alert-negative {
+            background-color: #ff7d88; 
+            border-color: #ff2d42; 
+            text-align: center;
+            padding: 0.3rem 0.6rem; 
+            margin-bottom: 0;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .alert-negative strong {
+            font-weight: bold;
+        }
+
+        /* Close button styling */
+        .alert .close {
+            font-size: 1.5rem;
+            padding: 0.5rem;
+        }

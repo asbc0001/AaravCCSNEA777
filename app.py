@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy as sa
 from typing import List
@@ -148,6 +148,8 @@ def Index():
 
 @app.route('/workouts')
 def Workouts():
+    flash("Negative", "negative")
+    flash("Positive", "positive")
     return render_template("workouts.html")
 
 @app.route('/exercises')

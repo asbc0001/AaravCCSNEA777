@@ -43,6 +43,32 @@
 
         </div>
     </nav>
+
+    {% with successes = get_flashed_messages(category_filter=["positive"]) %}
+    {% if successes %}
+        {% for msg in successes %}
+            <div class="alert alert-success alert-positive alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="close btn button-success mx-auto w-auto py-1 mb-2" data-bs-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% with errors = get_flashed_messages(category_filter=["negative"]) %}
+        {% if errors %}
+            {% for msg in errors %}
+                <div class="alert alert-danger alert-negative alert-dismissible fade show" role="alert">
+                    <strong>Error: </strong>{{ msg }}
+                    <button type="button" class="close btn button-dark mx-auto w-auto py-1 mb-2" data-bs-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     
     <!--Main content for the page-->
     <main class="container-fluid text-center"></main>
