@@ -6,6 +6,9 @@ import sqlalchemy as sa                                                         
 from typing import List
 import datetime
 import os
+import re         
+from typing import List
+from werkzeug.security import generate_password_hash                                                                                                                     # type: ignore
 
 # Get the path of the directory where the app.py script is located
 basedirectory = os.path.abspath(os.path.dirname(__file__))
@@ -124,11 +127,62 @@ class Set(db.Model):
     
 categories = ["Abs", "Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
 
-# Temporary placeholder versions of each route to allow navigation bar to be implemented
+
+# Route for allowing users to register and create an account
 @app.route('/register', methods=["GET", "POST"])
 def Register():
     if request.method == "GET":
         return render_template("register.html")
+    
+    elif request.method == "POST":
+        # Get user inputs from register form
+        email_address = request.form.get("email")
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+        
+        # Perform input validations:
+        
+        if not email_address or not password or not confirm_password:
+            flash("Must complete all fields", "negative")
+            
+        # Define regular expression format of an email address
+        email_format = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        # Check whether email_address is in email address format
+        if not re.match(email_format, email_address):
+            flash("Must enter a valid email address", "negative")
+        
+        # Get all user email addresses from the user table
+        emails = User.query.with_entities(User.email).all()
+        # Extract email addresses from the resulting list of tuples
+        email_list = [email[0] for email in emails]
+        if email_address in email_list:
+            flash("User with that email address already exists", "negative")
+        
+        # Define regular expression pattern for a strong password
+        password_pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$'
+        if not re.match(password_pattern, password):
+            flash("Password must be at least 8 characters long and use at least one each of"
+                  " upper-case letters, lower-case letters, numbers and symbols", "negative")
+            
+        if password != confirm_password:
+            flash("Both passwords must be the same", "negative")
+        
+        # Process of creating a new user, if inputs have passed all validation checks
+        else:
+            # Generate hash of password
+            hash = generate_password_hash(password)
+            
+            # Add new user to user table of tracker.db
+            new_user = User(email=email_address, password_hash=hash)
+            db.session.add(new_user)
+            db.session.commit()
+            
+            # Add default exercises to exercise table with the new user's user_id
+            
+            
+            flash("User created succesfully", "positive")
+            return redirect("/login")
+        return redirect("/register")
 
 @app.route('/login')
 def Login():
@@ -149,12 +203,10 @@ def Change_Password():
 @app.route('/')
 @app.route('/index')
 def Index():
-    return redirect('/workouts')
+    return redirect("/workouts")
 
 @app.route('/workouts')
 def Workouts():
-    flash("Negative", "negative")
-    flash("Positive", "positive")
     return render_template("workouts.html")
 
 @app.route('/exercises')
