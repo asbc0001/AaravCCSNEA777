@@ -88,4 +88,59 @@
         .alert .close {
             font-size: 1.5rem;
             padding: 0.5rem;
+            background-color: transparent !important;
+            color: #000000 !important;
         }
+
+/* Center the h4 title */
+h4 {
+    text-align: center;
+    color: #007bff;  /* Blue color for title */
+    margin-bottom: 15px;
+    margin-top: 20px;
+}
+
+/* Style for form container */
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+/* Style for form labels */
+.form-label {
+    font-size: 16px;
+    color: #201f1f;
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* Style for form inputs */
+.form-control {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* Style for the button */
+.btn {
+    background-color: #007bff;
+    border: none;
+    color: white;
+    padding: 12px;
+    font-size: 18px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #004b9a;
+}
+

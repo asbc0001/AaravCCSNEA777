@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, flash                                                                                                           # type: ignore
+from flask import Flask, render_template, redirect, flash, request                                                                                                           # type: ignore
 from typing import List
 from flask_sqlalchemy import SQLAlchemy                                                                                                                              # type: ignore
 from typing import List
@@ -125,9 +125,10 @@ class Set(db.Model):
 categories = ["Abs", "Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
 
 # Temporary placeholder versions of each route to allow navigation bar to be implemented
-@app.route('/register')
+@app.route('/register', methods=["GET", "POST"])
 def Register():
-    return "Register"
+    if request.method == "GET":
+        return render_template("register.html")
 
 @app.route('/login')
 def Login():
