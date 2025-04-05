@@ -1,6 +1,8 @@
-from flask import Flask, render_template, redirect, flash
-from flask_sqlalchemy import SQLAlchemy
-import sqlalchemy as sa
+from flask import Flask, render_template, redirect, flash                                                                                                           # type: ignore
+from typing import List
+from flask_sqlalchemy import SQLAlchemy                                                                                                                              # type: ignore
+from typing import List
+import sqlalchemy as sa                                                                                                                                              # type: ignore
 from typing import List
 import datetime
 import os
