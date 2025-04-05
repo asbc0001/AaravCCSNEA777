@@ -44,6 +44,7 @@
         </div>
     </nav>
 
+    <!-- Define the function of the postiive flashed messages -->
     {% with successes = get_flashed_messages(category_filter=["positive"]) %}
     {% if successes %}
         {% for msg in successes %}
@@ -57,6 +58,7 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Define the function of the negative flashed messages -->
     {% with errors = get_flashed_messages(category_filter=["negative"]) %}
         {% if errors %}
             {% for msg in errors %}

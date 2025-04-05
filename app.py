@@ -119,6 +119,8 @@ class Set(db.Model):
     # Display data about a Set entry for debugging / logging purposes
     def __repr__(self):
         return f"<Weight {self.weight} for reps {self.reps} on date {self.date} for exercise {self.exercise_id} for User {self.user_id}>"
+    
+categories = ["Abs", "Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
 
 # Temporary placeholder versions of each route to allow navigation bar to be implemented
 @app.route('/register')
