@@ -8,7 +8,8 @@ import datetime
 import os
 import re         
 from typing import List
-from werkzeug.security import generate_password_hash                                                                                                                    # type: ignore
+from werkzeug.security import generate_password_hash, check_password_hash                                                                                                                    # type: ignore
+from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required                                                                                                  #type: ignore
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
@@ -23,13 +24,21 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 # Configure the SQLite database URI by joining the base directory with 'tracker.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+os.path.join(basedirectory, 'tracker.db')
+# Set the session lifetime to 30 minutes
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=30)
+
+# Initialize Flask-Login
+login = LoginManager(app)
+
+# Set the route to which users will be redirected if attempting to access a route requiring authentication
+login.login_view = 'Login'
 
 # Initialize SQLAlchemy for the Flask app
 db = SQLAlchemy(app)
 
 
 # Model to define the structure of the database user table
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "user"
     
     user_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
@@ -128,6 +137,11 @@ class Set(db.Model):
     def __repr__(self):
         return f"<Weight {self.weight} for reps {self.reps} on date {self.date} for exercise {self.exercise_id} for User {self.user_id}>"
 
+# Configure user loader function
+@login.user_loader
+def load_user(id):
+    return db.session.get(User, int(id))
+
 # Define array of catgeories    
 categories = ["Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
 
@@ -135,6 +149,9 @@ categories = ["Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Trice
 # Route for allowing users to register and create an account
 @app.route('/register', methods=["GET", "POST"])
 def Register():
+    if current_user.is_authenticated:
+        return redirect("/workouts")
+    
     if request.method == "GET":
         return render_template("register.html")
     
@@ -201,14 +218,45 @@ def Register():
         flash("User created succesfully", "positive")
         return redirect("/login")
 
-
-@app.route('/login')
+# Route for allowing users to log in to the workout tracker
+@app.route('/login', methods = ["GET", "POST"])
 def Login():
-    return "Login"
+    if current_user.is_authenticated:
+        return redirect("/workouts")
+    
+    if request.method == "GET":
+        return render_template("login.html")
+    
+    if request.method == "POST":
+        # Get user inputs from login form
+        email_address = request.form.get("email")
+        password = request.form.get("password")
+        errors = False
+        if not email_address or not password:
+            flash("Must enter email address and password", "negative")
+            errors = True
+        
+        # Query to get user based on email_address
+        user = User.query.filter_by(email=email_address).first()
 
+        # Check if the user exists and if the password matches the hash
+        if not user or not check_password_hash(user.password_hash, password):
+            flash("Invalid email or password", "negative")
+            errors = True
+            
+        if errors:
+            return redirect("/login")   
+        
+        # Log user in
+        login_user(user)
+        return redirect("/workouts")
+        
+        
+# Route for logging out a user from the workout tracker
 @app.route('/logout')
 def Logout():
-    return "Logout"
+    logout_user()
+    return redirect("/login")
 
 @app.route('/reset_password')
 def Reset_Password():
@@ -220,45 +268,56 @@ def Change_Password():
 
 @app.route('/')
 @app.route('/index')
+@login_required
 def Index():
     return redirect("/workouts")
 
 @app.route('/workouts')
+@login_required
 def Workouts():
     return render_template("workouts.html")
 
 @app.route('/exercises')
+@login_required
 def Exercises():
     return "Exercises"
 
 @app.route('/exercise_graph')
+@login_required
 def Exercise_Graph():
     return render_template("exercise_graph.html")
 
 @app.route('/workout_graph')
+@login_required
 def Workout_Graph():
     return "Workout graph"
 
 @app.route('/workout_chart')
+@login_required
 def Workout_Chart():
     return "Workout chart"
 
 @app.route('/bodyweight')
+@login_required
 def Bodyweights():
     return "Bodyweight"
 
 @app.route('/bodyweight_graph')
+@login_required
 def Bodyweight_Graph():
     return "Bodyweight graph"
 
 @app.route('/settings')
+@login_required
 def Settings():
     return "Settings"
 
 @app.route('/goals')
+@login_required
 def Goals():
     return "Goals"
 
 @app.route('/1rm_prediction')
+@login_required
 def Prediction():
     return "1RM Prediction"

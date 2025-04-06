@@ -1,14 +1,14 @@
-<!-- Template for register page -->
+<!-- Template for login page -->
 {% extends "layout.html" %}
 
 {% block title %}
-    Register
+    Login
 {% endblock %}
 
 {% block main %}
-    <!-- Define register form -->
-    <h4 class="text-center">Register</h4>
-    <form action="/register" method="post" class="form-container">
+    <!-- Define login form -->
+    <h4 class="text-center">Login</h4>
+    <form action="/login" method="post" class="form-container">
         <div class="mb-3">
             <label for="email" class="form-label">Email address</label>
             <input autocomplete="off" id="email" class="form-control" name="email"  type="text">
@@ -17,11 +17,11 @@
             <label for="password" class="form-label">Password</label>
             <input autocomplete="off" id="password" class="form-control" name="password" type="password">
         </div>
-        <div class="mb-3">
-            <label for="confirm_password" class="form-label">Confirm password</label>
-            <input autocomplete="off" id="confirm_password" class="form-control" name="confirm_password" type="password">
+        <button type="submit" class="btn btn-primary w-100">Log In</button>
+        <!-- Forgot Password Button -->
+        <div class="text-center mt-3">
+            <a href="{{ url_for("Reset_Password") }}" class="forgot-password-btn">Forgot password?</a>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Create account</button>
     </form>
 {% endblock %}
 
