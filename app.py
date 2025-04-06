@@ -8,7 +8,10 @@ import datetime
 import os
 import re         
 from typing import List
-from werkzeug.security import generate_password_hash                                                                                                                     # type: ignore
+from werkzeug.security import generate_password_hash                                                                                                                    # type: ignore
+
+# Import list of dictionaries of default exercises from defaultexercises.py
+from defaultexercises import default_exercises                                                                                                                               #type:ignore
 
 # Get the path of the directory where the app.py script is located
 basedirectory = os.path.abspath(os.path.dirname(__file__))
@@ -124,8 +127,9 @@ class Set(db.Model):
     # Display data about a Set entry for debugging / logging purposes
     def __repr__(self):
         return f"<Weight {self.weight} for reps {self.reps} on date {self.date} for exercise {self.exercise_id} for User {self.user_id}>"
-    
-categories = ["Abs", "Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
+
+# Define array of catgeories    
+categories = ["Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
 
 
 # Route for allowing users to register and create an account
@@ -177,8 +181,14 @@ def Register():
             db.session.add(new_user)
             db.session.commit()
             
+            # Get the new user's user_id
+            user_id = new_user.user_id
+
             # Add default exercises to exercise table with the new user's user_id
-            
+            for exercise in default_exercises:
+                new_exercise = Exercise(name=exercise["name"], category=exercise["category"], user_id=user_id)
+                db.session.add(new_exercise)
+            db.session.commit()
             
             flash("User created succesfully", "positive")
             return redirect("/login")
