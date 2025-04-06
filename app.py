@@ -10,6 +10,9 @@ import re
 from typing import List
 from werkzeug.security import generate_password_hash, check_password_hash                                                                                                                    # type: ignore
 from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required                                                                                                  #type: ignore
+from flask_mail import Mail, Message
+import jwt
+from time import time
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
@@ -27,8 +30,19 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+os.path.join(basedirectory,
 # Set the session lifetime to 30 minutes
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=30)
 
+# Configure Flask-Mail variables
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'actrackeremails@gmail.com'
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = 'actrackeremails@gmail.com'
+
 # Initialize Flask-Login
 login = LoginManager(app)
+
+# Create Flask-Mail instance
+mail = Mail(app)
 
 # Set the route to which users will be redirected if attempting to access a route requiring authentication
 login.login_view = 'Login'
@@ -59,6 +73,14 @@ class User(UserMixin, db.Model):
     
     # Define relationship to Set model
     sets: sa.orm.Mapped[list["Set"]] = sa.orm.relationship(back_populates="user")
+    
+    # Override get_id method to use user_id instead of id
+    def get_id(self):
+        return str(self.user_id)
+    
+    # Method for returning JWT token as a string
+    def get_reset_password_token(self):
+        return jwt.encode({'reset_password': self.user_id, 'exp': time() + 900}, app.config['SECRET_KEY'], algorithm='HS256')
     
     # Method for providing string representation (email) of the User instance for debugging/logging purposes
     def __repr__(self):
@@ -227,7 +249,7 @@ def Login():
     if request.method == "GET":
         return render_template("login.html")
     
-    if request.method == "POST":
+    elif request.method == "POST":
         # Get user inputs from login form
         email_address = request.form.get("email")
         password = request.form.get("password")
@@ -258,9 +280,46 @@ def Logout():
     logout_user()
     return redirect("/login")
 
-@app.route('/reset_password')
+# Route for sending a password reset email to a user who has forgotten their password
+@app.route('/reset_password', methods = ["GET", "POST"])
 def Reset_Password():
-    return "Reset Password"
+    if current_user.is_authenticated:
+        return redirect("/workouts")
+    
+    if request.method == "GET":
+        return render_template("reset_password.html")
+    
+    elif request.method == "POST":
+        # Get user inputs from reset_password form
+        email_address = request.form.get("email")
+        errors = False
+        if not email_address:
+            flash("Must enter email address", "negative")
+            errors = True
+        
+        # Query to get user based on email_address
+        user = User.query.filter_by(email=email_address).first()
+        if not user:
+            flash("No user found with this email address", "negative")
+            errors = True
+
+        if errors:
+            return redirect("/reset_password")
+        
+        # Generate password reset email token
+        token = user.get_reset_password_token()
+        # Create message object
+        msg = Message("Reset Your Password for AC\'s Tracker", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
+        msg.body=render_template('email/reset_email.txt', token=token)
+        msg.html=render_template('email/reset_email.html', token=token)
+        mail.send(msg)
+        
+        flash("Password reset email sent. The password reset link will expire in 15 minutes. You may need to check your spam folder", "positive")
+        return redirect("/login")
+
+    
+        
+    
 
 @app.route('/change_password')
 def Change_Password():
