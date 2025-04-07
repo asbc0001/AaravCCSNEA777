@@ -81,7 +81,16 @@ class User(UserMixin, db.Model):
     
     # Method for returning JWT token as a string
     def get_reset_password_token(self):
-        return jwt.encode({'reset_password': self.user_id, 'exp': time() + 900}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jwt.encode({'change_password': self.user_id, 'exp': time() + 900}, app.config['SECRET_KEY'], algorithm='HS256')
+    
+    @staticmethod
+    def verify_token(token):
+        try:
+            id = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])['change_password']
+        except:
+            return None
+        # Use the load_user function to fetch user by their user_id
+        return load_user(id)
     
     # Method for providing string representation (email) of the User instance for debugging/logging purposes
     def __repr__(self):
@@ -327,10 +336,54 @@ def Reset_Password():
         return redirect("/login")
 
 
-
-@app.route('/change_password')
-def Change_Password():
-    return "Change password"
+# Route for allowing a user to change their password using the link from a password reset email
+@app.route('/change_password/<token>', methods = ["GET", "POST"])
+def Change_Password(token):
+    if current_user.is_authenticated:
+        return redirect("/workouts")
+    
+    # Get user from token
+    user = User.verify_token(token)
+    if not user:
+        flash("Invalid or expired token", "negative")
+        return redirect("/login")
+    
+    if request.method == "GET":
+        return render_template("change_password.html", token = token)
+    
+    elif request.method == "POST":
+        # Get user inputs from change_password form
+        new_password = request.form.get("password")
+        confirm_new_password = request.form.get("confirm_password")
+        
+        # Perform input validations:
+        errors = False
+        
+        if not new_password or not confirm_new_password:
+            flash("Must complete all fields", "negative")
+            errors = True
+            
+        # Define regular expression pattern for a strong password
+        password_pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$'
+        if not re.match(password_pattern, new_password):
+            flash("New password must be at least 8 characters long and use at least one each of"
+                  " upper-case letters, lower-case letters, numbers and symbols", "negative")
+            errors = True
+            
+        if new_password != confirm_new_password:
+            flash("Both passwords must be the same", "negative")
+            errors = True
+        
+        if errors:
+            return redirect(f"/change_password/{token}")
+        
+        # Generate password hash and update password_hash for the user
+        hash = generate_password_hash(new_password)
+        user.password_hash = hash
+        db.session.commit()
+        
+        flash("Password has been changed", "positive")
+        return redirect("/login")
 
 @app.route('/')
 @app.route('/index')
