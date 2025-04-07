@@ -10,8 +10,8 @@ import re
 from typing import List
 from werkzeug.security import generate_password_hash, check_password_hash                                                                                                                    # type: ignore
 from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required                                                                                                  #type: ignore
-from flask_mail import Mail, Message
-import jwt
+from flask_mail import Mail, Message                                                                                                                                                                #type: ignore
+import jwt                                                                                                                                                                                                  #type:ignore
 from time import time
 from threading import Thread
 
