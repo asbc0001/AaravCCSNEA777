@@ -13,6 +13,7 @@ from flask_login import LoginManager, UserMixin, current_user, login_user, logou
 from flask_mail import Mail, Message
 import jwt
 from time import time
+from threading import Thread
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
@@ -35,7 +36,7 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'actrackeremails@gmail.com'
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = 'actrackeremails@gmail.com'
 
 # Initialize Flask-Login
@@ -163,6 +164,11 @@ class Set(db.Model):
 @login.user_loader
 def load_user(id):
     return db.session.get(User, int(id))
+
+# Function for pushing app context and sending an email
+def send_async_email(msg):
+    with app.app_context():
+        mail.send(msg)
 
 # Define array of catgeories    
 categories = ["Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
@@ -310,16 +316,17 @@ def Reset_Password():
         token = user.get_reset_password_token()
         # Create message object
         msg = Message("Reset Your Password for AC\'s Tracker", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
+        # Define the email content in both plaintext and html
         msg.body=render_template('email/reset_email.txt', token=token)
         msg.html=render_template('email/reset_email.html', token=token)
-        mail.send(msg)
+        
+        # Starts a background thread to send the email asynchronously.
+        Thread(target=send_async_email, args = (msg, )).start() 
         
         flash("Password reset email sent. The password reset link will expire in 15 minutes. You may need to check your spam folder", "positive")
         return redirect("/login")
 
-    
-        
-    
+
 
 @app.route('/change_password')
 def Change_Password():
