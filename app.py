@@ -179,6 +179,20 @@ def send_async_email(msg):
     with app.app_context():
         mail.send(msg)
 
+# Function for checking whether something is a positive float
+def is_positive_float(value):
+    try:
+        return float(value) > 0
+    except (ValueError, TypeError):
+        return False
+
+# Function for checking whether something is a positive integer
+def is_positive_int(value):
+    try:
+        return int(value) > 0
+    except (ValueError, TypeError):
+        return False
+
 # Define array of catgeories    
 categories = ["Back", "Biceps", "Chest", "Forearms", "Legs", "Shoulders", "Triceps"]
 
@@ -391,10 +405,59 @@ def Change_Password(token):
 def Index():
     return redirect("/workouts")
 
-@app.route('/workouts')
+@app.route('/workouts', methods = ["GET", "POST"])
 @login_required
 def Workouts():
-    return render_template("workouts.html")
+    # Define boolean to keep track of whether the user has submitted the workouts form or not
+    submitted = False 
+    # Get string of the date of a week ago in YYYY-MM-DD format
+    one_week_ago = datetime.datetime.today() - datetime.timedelta(days=7)
+    start_date = one_week_ago.strftime('%Y-%m-%d')
+    # Get string of the current date in YYYY-MM-DD format
+    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    # Define dictionary holding default values of fields in workouts form
+    filter = {"exercise_or_category": "All", "start_date": start_date, "end_date": current_date}
+    # Get a list of the names of the current user's exercises using the relationship between the User and Exercise models
+    exercise_names = sorted([e.name for e in current_user.exercises])
+    # Create list of exercise and category names (and "All")
+    exercises_and_categories = sorted(exercise_names.copy() + categories + ["All"])
+
+    if request.method == "POST":
+        errors = False
+        # Check if add_set form submitted
+        if 'add_set' in request.form:
+            exercise = request.form.get("exercise")
+            weight = request.form.get("weight")
+            reps = request.form.get("reps")
+            date = request.form.get("date")
+            if not exercise or not weight or not reps or not date:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if exercise not in exercise_names:
+                flash("Must enter a valid exercise", "negative")
+                errors = True
+            if not is_positive_float(weight):
+                flash("Weight must be a number greater than 0", "negative")
+                errors = True
+            if not is_positive_int(reps):
+                flash("Reps must be a whole number greater than 0", "negative")
+                errors = True
+            if date > current_date:
+                flash("Date must not be later than the current date", "negative")
+                errors = True
+            # Add new set if no errors have occured
+            if not errors:
+                estimated_1RM = float(weight) / (1.0278 - 0.0278 * int(reps)) # Calculate estimated 1RM using Brzycki formula
+                exercise_id = Exercise.query.filter_by(name=exercise, user_id=current_user.user_id).first().exercise_id # Get exercise_id of the exercise
+                date_object = datetime.datetime.strptime(date, "%Y-%m-%d").date() # Convert date to a datetime date object from a string
+                # Create and add new set record
+                new_set = Set(weight = round(float(weight), 1), reps = int(reps), estimated_1RM = round(estimated_1RM, 1), date = date_object, 
+                              exercise_id = exercise_id, user_id = current_user.user_id)
+                db.session.add(new_set)
+                db.session.commit()
+                flash("Set added", "positive")
+    return render_template("workouts.html", submitted=submitted, filter = filter, current_date = current_date, exercises=exercise_names, 
+                           exercises_and_categories = exercises_and_categories)
 
 @app.route('/exercises')
 @login_required
