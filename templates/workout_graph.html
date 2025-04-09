@@ -66,28 +66,25 @@
                     <canvas id="workoutChart" height="100"></canvas>
                 </div>
 
-                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 <script>
-                    const rawData = {{ set_data|tojson }};
-                    // reformat dates to dd/mm/yyyy format
-                    const labels = rawData.map(row => {
-                        const [y, m, d] = row[0].split("-");
-                        return `${d}/${m}/${y}`;
-                    });
-                    const dataPoints = rawData.map(row => row[1]);
-
+                    const rawData = {{ set_data | tojson }};
+                    // Convert to { x: date, y: value } format
+                    const dataPoints = rawData.map(row => ({
+                        x: row[0], // YYYY-MM-DD
+                        y: row[1]
+                    }));
+                
                     const ctx = document.getElementById('workoutChart').getContext('2d');
                     const workoutChart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: labels,
                             datasets: [{
                                 label: '{{ filter.metric }}',
                                 data: dataPoints,
                                 fill: true,
                                 backgroundColor: 'rgba(0, 123, 255, 0.1)',
                                 borderColor: '#007bff',
-                                tension: 0.1, // Lines with very slight curves
+                                tension: 0, // make lines straight
                                 pointRadius: 5,
                                 pointHoverRadius: 7
                             }]
@@ -97,28 +94,38 @@
                             maintainAspectRatio: false,
                             layout: {
                                 padding: {
-                                  top: 20,
-                                  right: 20,
-                                  bottom: 20,
-                                  left: 20
+                                    top: 20,
+                                    right: 20,
+                                    bottom: 20,
+                                    left: 20
                                 }
                             },
                             plugins: {
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
-                                            return `Value: ${context.raw}`;
+                                            return `Value: ${context.raw.y}`;
                                         }
                                     }
                                 },
                                 legend: {
-                                    display: false // Disable the legend
+                                    display: false
                                 }
                             },
                             scales: {
                                 x: {
-                                    offset: true, // Add some spacing before first data point
+                                    type: 'time',
+                                    time: {
+                                        unit: 'day',
+                                        displayFormats: {
+                                            day: 'dd/MM/yyyy'
+                                        },
+                                        tooltipFormat: 'dd/MM/yyyy'
+                                    },
                                     ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 30,
+                                        autoSkip: true,
                                         font: {
                                             size: 14
                                         }
@@ -133,6 +140,7 @@
                                     }
                                 },
                                 y: {
+                                    beginAtZero: true,
                                     ticks: {
                                         font: {
                                             size: 14
@@ -145,14 +153,12 @@
                                             size: 16,
                                             weight: 'bold'
                                         }
-                                    },
-                                    beginAtZero: true
+                                    }
                                 }
                             }
                         }
                     });
                 </script>
-
             <!-- If there is no set data -->
             {% else %}
                 <div class="text-center alert alert-warning mt-1">

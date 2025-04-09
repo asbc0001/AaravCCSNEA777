@@ -12,7 +12,7 @@ import jwt                                                                      
 from time import time
 from threading import Thread
 from collections import defaultdict, OrderedDict
-from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta                                                                                                                                                                        #type:ignore
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
