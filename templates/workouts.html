@@ -35,8 +35,9 @@
     <!-- Javascript for exercise autocomplete dropdown -->
     <script>
         const exercises = {{ exercises | tojson }};
-    
+        
         $(document).ready(function() {
+            // Handle input event and show matching exercise suggestions
             $("#exerciseInput").on("input", function() {
                 let query = $(this).val().toLowerCase();
                 let matches = exercises.filter(ex => ex.toLowerCase().includes(query));
@@ -48,12 +49,14 @@
                     $("#exerciseSuggestions").hide();
                 }
             });
-    
+            
+            // Fill input field with selected suggestion and hide list
             $(document).on("click", "#exerciseSuggestions li", function() {
                 $("#exerciseInput").val($(this).text());
                 $("#exerciseSuggestions").hide();
             });
-    
+            
+            // Hide suggestions when clicking outside the input field or list
             $(document).click(function(event) {
                 if (!$(event.target).closest("#exerciseInput, #exerciseSuggestions").length) {
                     $("#exerciseSuggestions").hide();
@@ -64,7 +67,7 @@
 
 
     <h4 class="text-cente mt-5">Workout history</h4>
-    <form action="/workouts" method="post" class="form-container position-relative">
+    <form action="/workouts" method="post" class="mb-3 form-container position-relative">
         <!-- Exercise Autocomplete Dropdown -->
         <div class="mb-3 position-relative">
             <label for="exerciseCategoryInput" class="form-label">Exercise / Category </label>
@@ -73,15 +76,15 @@
         </div>
         <div class="d-flex gap-3 mb-3">
             <div class="w-50">
-                <label for="date" class="form-label">Date</label>
+                <label for="date" class="form-label">Start date</label>
                 <input type="date" name="start_date" id="start_date" value="{{ filter['start_date'] }}" class="form-control">
             </div>
             <div class="w-50">
-                <label for="date" class="form-label">Date</label>
+                <label for="date" class="form-label">End date</label>
                 <input type="date" name="end_date" id="end_date" value="{{ filter['end_date'] }}" class="form-control">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary w-100" name="workouts">Add</button>
+        <button type="submit" class="btn btn-primary w-100" name="workouts">View Workouts</button>
     </form>
 
     <!-- Javascript for exercise / category autocomplete dropdown -->
@@ -113,5 +116,218 @@
             });
         });
     </script>
+    
+    <!-- Only attempt to show set data if form been submitted -->
+    {% if submitted %}
+        <!-- If there is set data: -->
+        {% if filtered_workouts %}
+            {% for date, exercises in filtered_workouts.items() %}
+                <!-- Workout date header -->
+                <div class="workout-date d-flex justify-content-center align-items-center gap-2">
+                    <span>{{ date }}</span>
+            
+                <!-- Copy icon button next to workout date -->
+                    <button type="button" class="icon-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#copyWorkoutModal"
+                        data-old-date="{{ date }}"
+                        title="Copy workout">
+                        <i class="bi bi-files"></i>
+                    </button>
+                </div>
+            
+                {% for exercise_name, sets in exercises.items() %}
+                    <!-- Split into exercise and category names -->
+                    {% set exercise_parts = exercise_name.rsplit(" (", 1) %}
+                    <!-- Exercise name header -->
+                    <div class="exercise-header">
+                        <!-- Define category name in a different class -->
+                        {{ exercise_parts[0] }} <span class="category">({{ exercise_parts[1][:-1] }})</span>
+                    </div>
+                
+                    <!-- Define table of sets data -->
+                    <div class="set-table mx-auto">
+                        <div class="set-table-header">
+                        <div>Weight</div>
+                        <div>Reps</div>
+                        <div>1RM</div>
+                        <div>Actions</div>
+                        </div>
+                
+                        {% for set in sets %}
+                            <div class="set-row">
+                                <div>{{ set.weight }}{{ current_user.sets_unit }}</div>
+                                <div>{{ set.reps }}</div>
+                                <div>{{ set.estimated_1RM }}{{ current_user.sets_unit }}</div>
+                                <div class="set-icons">
+                                    <!-- Edit icon button -->
+                                    <button type="button"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editSetModal"
+                                        data-set-id="{{ set.set_id }}"
+                                        data-weight="{{ set.weight }}"
+                                        data-reps="{{ set.reps }}"
+                                        data-date="{{ date }}"
+                                        data-exercise="{{ exercise_parts[0] }}"
+                                        title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <!-- Delete icon button-->
+                                    <form method="POST" action="/workouts" style="display:inline;">
+                                        <input type="hidden" name="set_id" value="{{ set.set_id }}">
+                                        <button type="submit" name="delete_set" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        
+        <!-- If there is no set data -->
+        {% else %}
+             <div class="text-center alert alert-warning mt-1">
+                No sets found for the selected exercise / category / date range
+             </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- copy_workout modal pop-up form -->
+    <div class="modal fade" id="copyWorkoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="/workouts" class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Copy Workout</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+            <!-- Hidden original value of date -->
+            <input type="hidden" id="copyOldDate" name="old_workout_date">
+            <label for="new_workout_date" class="form-label">New Date</label>
+            <input type="date" name="new_workout_date" class="form-control" required>
+            </div>
+            <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" name="copy_workout">Copy Workout</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </form>
+        </div>
+    </div>
+
+    <!-- edit_set modal pop-up form -->
+    <div class="modal fade" id="editSetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="/workouts" class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Edit Set</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+            <!-- Hidden set_id atribute-->
+            <input type="hidden" name="set_id" id="edit_set_id">
+            <!-- Autocomplete drop-down for new exercise -->
+            <div class="mb-3 position-relative">
+                <label for="editExerciseInput" class="form-label">Exercise</label>
+                <input type="text" name="new_exercise" id="editExerciseInput" class="form-control" autocomplete="off">
+                <ul id="editExerciseSuggestions" class="list-group position-absolute mt-1" style="display: none; width: 100%; z-index: 1000;"></ul>
+            </div>
+            <div class="mb-3">
+                <label for="edit_weight" class="form-label">Weight ({{ current_user.sets_unit }})</label>
+                <input type="text" name="new_weight" id="edit_weight" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="edit_reps" class="form-label">Reps</label>
+                <input type="text" name="new_reps" id="edit_reps" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="edit_date" class="form-label">Date</label>
+                <input type="date" name="new_date" id="edit_date" class="form-control" required>
+            </div>
+            </div>
+            <div class="modal-footer">
+            <button type="submit" class="btn btn-primary"name="edit_set">Edit Set</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </form>
+        </div>
+    </div>
+
+    <!-- Javascript for edit_exercise autocomplete dropdown -->
+    <script>        
+        $(document).ready(function() {
+            // Handle input event and show matching exercise suggestions
+            $("#editExerciseInput").on("input", function() {
+                let query = $(this).val().toLowerCase();
+                let matches = exercises.filter(ex => ex.toLowerCase().includes(query));
+                
+                if (matches.length) {
+                    let suggestionsHtml = matches.map(ex => `<li class="list-group-item list-group-item-action">${ex}</li>`).join("");
+                    $("#editExerciseSuggestions").html(suggestionsHtml).show();
+                } else {
+                    $("#editExerciseSuggestions").hide();
+                }
+            });
+            
+            // Fill input field with selected suggestion and hide list
+            $(document).on("click", "#editExerciseSuggestions li", function() {
+                $("#editExerciseInput").val($(this).text());
+                $("#editExerciseSuggestions").hide();
+            });
+            
+            // Hide suggestions when clicking outside the input field or list
+            $(document).click(function(event) {
+                if (!$(event.target).closest("#editExerciseInput, #editExerciseSuggestions").length) {
+                    $("#editExerciseSuggestions").hide();
+                }
+            });
+        });
+    </script>
+
+    <!-- JavaScript for the pop-up modal forms -->
+    <script>
+        // Copy workout modal
+        const copyModal = document.getElementById('copyWorkoutModal');
+        if (copyModal) {
+          copyModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const oldDate = button.getAttribute('data-old-date');
+      
+            // Populate hidden input with the date to copy from
+            copyModal.querySelector('#copyOldDate').value = oldDate;
+          });
+        }
+
+        // Edit set modal
+        const editModal = document.getElementById('editSetModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+        
+            // Extract set values from data attributes
+            const set_id = button.getAttribute('data-set-id');
+            const weight = button.getAttribute('data-weight');
+            const reps = button.getAttribute('data-reps');
+            const rawDate = button.getAttribute('data-date');
+            const exercise = button.getAttribute('data-exercise');
+            
+            // Convert date from dd/mm/yyyy format to YYYY-MM-DD
+            const [day, month, year] = rawDate.split('/');
+            const date = `${year}-${month}-${day}`;
+        
+            // Populate modal form inputs
+            editModal.querySelector('#edit_set_id').value = set_id;
+            editModal.querySelector('#editExerciseInput').value = exercise;
+            editModal.querySelector('#edit_weight').value = weight;
+            editModal.querySelector('#edit_reps').value = reps;
+            editModal.querySelector('#edit_date').value = date;
+
+            });
+        }    
+    </script>
+
+
+
 {% endblock %}
 

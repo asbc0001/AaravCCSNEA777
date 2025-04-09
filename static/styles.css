@@ -92,7 +92,7 @@
             color: #000000 !important;
         }
 
-        /* Center the h4 title */
+        /* Center h4 title */
         h4 {
             text-align: center;
             color: #007bff;
@@ -167,3 +167,91 @@
             border-color: #0056b3;
         }
 
+
+    
+        /* Style for exercise names in workout hstory */
+        .exercise-header {
+            font-size: 17px;
+            font-weight: 500;
+            color: #333;
+            margin: 10px auto 5px auto;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        /* Style for the category text beside exercise name */
+        .exercise-header .category {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+            margin-left: 5px;
+        }
+
+        /* Style for date headings in workout history */
+        .workout-date {
+            font-size: 20px;
+            font-weight: 600;
+            color: #007bff;
+            margin-top: 30px;
+        }
+
+        /* Container for each exercise's set table */
+        .set-table {
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            margin-top: 10px;
+        }
+
+        /* Style for header and rows in the set tables */
+        .set-table-header,
+        .set-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+        }
+
+        /* Header row style for set table */
+        .set-table-header {
+            font-weight: bold;
+            background-color: #e8e8e8;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .set-row {
+            border-bottom: 1px solid #ccc;
+            padding: 8px 10px;
+            background-color: #fff;
+        }
+
+        /* Rounded bottom corners stylng for last row in the set table */
+        .set-row:last-child {
+            border-radius: 0 0 5px 5px;
+        }
+
+
+        /* Styling for edit / copy / delete icon buttons */
+
+        .set-icons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .set-icons button,
+        .icon-button {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #444;
+            padding: 2px 5px;
+        }
+
+        .set-icons button:hover,
+        .icon-button:hover {
+            color: #007bff;
+        }

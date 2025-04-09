@@ -1,19 +1,17 @@
 from flask import Flask, render_template, redirect, flash, request                                                                                                           # type: ignore
 from typing import List
 from flask_sqlalchemy import SQLAlchemy                                                                                                                              # type: ignore
-from typing import List
 import sqlalchemy as sa                                                                                                                                              # type: ignore
-from typing import List
 import datetime
 import os
 import re         
-from typing import List
 from werkzeug.security import generate_password_hash, check_password_hash                                                                                                                    # type: ignore
 from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required                                                                                                  #type: ignore
 from flask_mail import Mail, Message                                                                                                                                                                #type: ignore
 import jwt                                                                                                                                                                                                  #type:ignore
 from time import time
 from threading import Thread
+from collections import defaultdict, OrderedDict
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
@@ -405,6 +403,7 @@ def Change_Password(token):
 def Index():
     return redirect("/workouts")
 
+# Home page route, for allowing a user to add / edit / delete sets and view / copy workouts
 @app.route('/workouts', methods = ["GET", "POST"])
 @login_required
 def Workouts():
@@ -421,6 +420,8 @@ def Workouts():
     exercise_names = sorted([e.name for e in current_user.exercises])
     # Create list of exercise and category names (and "All")
     exercises_and_categories = sorted(exercise_names.copy() + categories + ["All"])
+    # Create empty filtered_workouts dictionary
+    filtered_workouts = {}
 
     if request.method == "POST":
         errors = False
@@ -456,13 +457,138 @@ def Workouts():
                 db.session.add(new_set)
                 db.session.commit()
                 flash("Set added", "positive")
+        
+        # Check if workouts form submitted
+        if 'workouts' in request.form:
+            submitted = True
+            exercise_or_category = request.form.get("exercisecategory")
+            start_date = request.form.get("start_date")
+            end_date = request.form.get("end_date")
+            if not exercise_or_category or not start_date or not end_date:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if exercise_or_category not in exercises_and_categories:
+                flash("Must enter a valid exercise or category", "negative")
+                errors = True
+            if start_date > end_date or start_date > current_date or end_date > current_date:
+                flash("Start date must not be later than end date, and neither can be later than current date", "negative")
+                errors = True
+            # Get sets if no errors have occured
+            if not errors:
+                # Update filter
+                filter["exercise_or_category"] = exercise_or_category
+                filter["start_date"] = start_date
+                filter["end_date"] = end_date
+                # Convert dates to correct format for database
+                start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+                end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+                # Build base query
+                query = Set.query.join(Exercise).filter(
+                    Set.user_id == current_user.user_id,
+                    Set.date.between(start_date_obj, end_date_obj))
+                if exercise_or_category in exercise_names:
+                    query = query.filter(Exercise.name == exercise_or_category)
+                elif exercise_or_category in categories:
+                    query = query.filter(Exercise.category == exercise_or_category)
+                    
+                # Get all sets ordered by date from latest to oldest
+                sets = query.order_by(Set.date.desc()).all()
+                
+                # Build filtered_workouts data structure:
+                
+                raw_workouts = defaultdict(lambda: defaultdict(list))
+                for set in sets:
+                    date_key = set.date.strftime('%d/%m/%Y') # Format dates in dd/mm/yyyy format
+                    exercise_key = f"{set.exercise.name} ({set.exercise.category})" # Combine exercise names with their category
+                    raw_workouts[date_key][exercise_key].append({
+                        "weight":set.weight,
+                        "reps": set.reps,
+                        "estimated_1RM": set.estimated_1RM,
+                        "set_id": set.set_id
+                    })
+                
+                # Sort by date
+                filtered_workouts = OrderedDict(sorted(raw_workouts.items(), key=lambda x: x[0], reverse=True))
+                
+        # Check if copy_workout form submitted
+        if 'copy_workout' in request.form:
+            old_workout_date = request.form.get("old_workout_date")
+            new_workout_date = request.form.get("new_workout_date")
+            errors = False
+            if not new_workout_date:
+                flash("Must enter a new date", "negative")
+                errors = True
+            if new_workout_date > current_date:
+                flash("New date must not be later than current date", "negative")
+                errors = False
+            if not errors:
+                # Convert dates to correct format
+                old_workout_date_object = datetime.datetime.strptime(old_workout_date, "%d/%m/%Y").date()
+                new_workout_date_object = datetime.datetime.strptime(new_workout_date, "%Y-%m-%d").date()
+                # Get the sets which have to be copied using old_workout_date
+                sets_to_copy = Set.query.filter_by(user_id=current_user.user_id, date=old_workout_date_object).all()
+                for set in sets_to_copy:
+                    new_set = Set(weight = set.weight, reps = set.reps, date = new_workout_date_object,
+                        estimated_1RM = set.estimated_1RM, exercise_id = set.exercise_id, user_id = set.user_id)
+                    db.session.add(new_set)
+                db.session.commit()
+                flash("Workout copied", "positive")
+            
+        # Check if edit_set form submitted
+        if 'edit_set' in request.form:
+            set_id = request.form.get("set_id")
+            new_exercise = request.form.get("new_exercise")
+            new_weight = request.form.get("new_weight")
+            new_reps = request.form.get("new_reps")
+            new_date = request.form.get("new_date")
+            if not new_exercise or not new_weight or not new_reps or not new_date:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if new_exercise not in exercise_names:
+                flash("Must enter a valid exercise", "negative")
+                errors = True
+            if not is_positive_float(new_weight):
+                flash("Weight must be a number greater than 0", "negative")
+                errors = True
+            if not is_positive_int(new_reps):
+                flash("Reps must be a whole number greater than 0", "negative")
+                errors = True
+            if new_date > current_date:
+                flash("Date must not be later than the current date", "negative")
+                errors = True
+            # Add new set if no errors have occured
+            if not errors:
+                new_estimated_1RM = float(new_weight) / (1.0278 - 0.0278 * int(new_reps))
+                new_exercise_id = Exercise.query.filter_by(name=new_exercise, user_id=current_user.user_id).first().exercise_id
+                new_date_object = datetime.datetime.strptime(new_date, "%Y-%m-%d").date()
+                # Get set to edit using its set_id
+                set = db.session.get(Set, set_id)
+                set.weight = round(float(new_weight), 1)
+                set.reps = int(new_reps)
+                set.estimated_1RM = round(new_estimated_1RM, 1)
+                set.date = new_date_object
+                set.exercise_id = new_exercise_id
+                db.session.commit()
+                flash("Set edited", "positive")
+                
+        # Check if delete_set button pressed (form submitted)
+        if 'delete_set' in request.form:
+            set_id = request.form.get("set_id")
+            # Get set to delete using set_id
+            set = db.session.get(Set, set_id)
+            db.session.delete(set)
+            db.session.commit()
+            flash("Set deleted", "positive")
+            
     return render_template("workouts.html", submitted=submitted, filter = filter, current_date = current_date, exercises=exercise_names, 
-                           exercises_and_categories = exercises_and_categories)
+                           exercises_and_categories = exercises_and_categories, filtered_workouts = filtered_workouts)
 
-@app.route('/exercises')
+# Route for allowing users to create, edit, delete and view their exercises
+@app.route('/exercises', methods = ["GET", "POST"])
 @login_required
 def Exercises():
-    return "Exercises"
+    if request.method == "GET":
+        
 
 @app.route('/exercise_graph')
 @login_required
