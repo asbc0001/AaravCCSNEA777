@@ -100,7 +100,8 @@ class Bodyweight(db.Model):
     weight_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
     weight: sa.orm.Mapped[float] = sa.orm.mapped_column(sa.Float)
     date: sa.orm.Mapped[datetime.date] = sa.orm.mapped_column(sa.Date)
-    time_entered: sa.orm.Mapped[datetime.time] = sa.orm.mapped_column(sa.Time)
+    time_entered: sa.orm.Mapped[datetime.time] = sa.orm.mapped_column(sa.Time,
+            default=lambda: datetime.datetime.now().time().replace(second=0, microsecond=0))
     user_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, sa.ForeignKey("user.user_id"))
                                                
     # Define relationship to User model
@@ -665,6 +666,7 @@ def Exercises():
                 flash("Deletion cancelled", "negative")
         return redirect("/exercises")
 
+# Route for displaying exercise metric progress graphs
 @app.route('/exercise_graph', methods = ["GET", "POST"])
 @login_required
 def Exercise_Graph():
@@ -738,6 +740,7 @@ def Exercise_Graph():
 
     return render_template("exercise_graph.html", submitted = submitted, filter= filter, exercises=exercise_names, metrics = metrics, set_data = final_data)
 
+# Route for displaying workout progress graphs
 @app.route('/workout_graph', methods = ["GET", "POST"])
 @login_required
 def Workout_Graph():
@@ -793,19 +796,117 @@ def Workout_Graph():
                     metric_value = sum(set.weight * set.reps for set in sets_on_date)
                 # Append entry to final_data
                 final_data.append([date.strftime("%Y-%m-%d"), round(metric_value, 1)])
-
     
     return render_template("workout_graph.html", submitted = submitted, filter= filter, metrics = metrics, set_data = final_data)
 
-@app.route('/workout_chart')
-@login_required
-def Workout_Chart():
-    return "Workout chart"
-
-@app.route('/bodyweight')
+# Route for adding / editing / deleting / viewing bodyweight data
+@app.route('/bodyweight', methods = ["GET", "POST"])
 @login_required
 def Bodyweights():
-    return "Bodyweight"
+    # Define boolean to keep track of whether the user has submitted the bodyweight_history form or not
+    submitted = False 
+    # Get string of the date of a month ago in YYYY-MM-DD format
+    one_month_ago = datetime.date.today() - relativedelta(months=1)
+    start_date = one_month_ago.strftime("%Y-%m-%d")
+    # Get string of the current date in YYYY-MM-DD format
+    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    # Define dictionary holding default values of fields in workout_graph form
+    filter = {"start_date": start_date, "end_date": current_date}
+    # Create empty bodyweights list
+    bodyweights = []
+    
+    if request.method == "POST":
+        errors = False
+        # Check if add_bodyweight form submitted
+        if 'add_bodyweight' in request.form:
+            weight = request.form.get("weight")
+            date = request.form.get("date")
+            if not weight or not date:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if not is_positive_float(weight):
+                flash("Weight must be a number greater than 0", "negative")
+                errors = True
+            if date > current_date:
+                flash("Date must not be later than the current date", "negative")
+                errors = True
+            # Add new bodyweight if no errors have occured
+            if not errors:
+                date_object = datetime.datetime.strptime(date, "%Y-%m-%d").date() # Convert date to a datetime date object from a string
+                # Create and add new bodyweight record
+                new_bodyweight = Bodyweight(weight = round(float(weight), 1), date = date_object, user_id = current_user.user_id)
+                db.session.add(new_bodyweight)
+                db.session.commit()
+                flash("Bodyweight added", "positive")
+                
+        # Check if bodyweight_history form submitted
+        if 'bodyweight_history' in request.form:
+            submitted = True
+            start_date = request.form.get("start_date")
+            end_date = request.form.get("end_date")
+            if not start_date or not end_date:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if start_date > end_date or start_date > current_date or end_date > current_date:
+                flash("Start date must not be later than end date, and neither can be later than current date", "negative")
+                errors = True
+            # Get weights if no errors have occured
+            if not errors:
+                # Update filter
+                filter["start_date"] = start_date
+                filter["end_date"] = end_date
+                # Convert dates to correct format for database
+                start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+                end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+                # Create and execute query for bodyweights within date range
+                bodyweight_objects = Bodyweight.query.filter(
+                        Bodyweight.user_id == current_user.user_id,
+                        Bodyweight.date.between(start_date_obj, end_date_obj)
+                    ).order_by(Bodyweight.date.desc(), Bodyweight.time_entered.desc()).all()
+                # Populate bodyweights list with dictionaries
+                for bodyweight in bodyweight_objects:
+                    bodyweights.append({
+                        "date": bodyweight.date.strftime("%d/%m/%Y"),
+                        "time": bodyweight.time_entered.strftime("%H:%M"),
+                        "weight": bodyweight.weight,
+                        "weight_id": bodyweight.weight_id
+                    })
+        
+        # Check if edit_bodyweight form submitted
+        if 'edit_bodyweight' in request.form:
+            weight_id = request.form.get("weight_id")
+            new_weight = request.form.get("new_weight")
+            new_date = request.form.get("new_date")
+            if not new_weight or not new_date:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if not is_positive_float(new_weight):
+                flash("Weight must be a number greater than 0", "negative")
+                errors = True
+            if new_date > current_date:
+                flash("Date must not be later than the current date", "negative")
+                errors = True
+            # edit bodyweight if no errors have occured
+            if not errors:
+                new_date_object = datetime.datetime.strptime(new_date, "%Y-%m-%d").date() # Convert new_date to a datetime date object from a string
+                # Get weight to edit using its weight_id
+                bodyweight = db.session.get(Bodyweight, weight_id)
+                bodyweight.weight = round(float(new_weight), 1)
+                bodyweight.date = new_date_object
+                db.session.commit()
+                flash("Bodyweight edited", "positive")
+                
+        # Check if delete_weight button pressed
+        if 'delete_weight' in request.form:
+            weight_id = request.form.get("weight_id")
+            # Get bodyweight to delete using weight_id
+            bodyweight = db.session.get(Bodyweight, weight_id)
+            db.session.delete(bodyweight)
+            db.session.commit()
+            flash("Bodyweight deleted", "positive")
+                 
+    return render_template("bodyweight.html", submitted = submitted, current_date = current_date, filter = filter, bodyweights = bodyweights)
+    
 
 @app.route('/bodyweight_graph')
 @login_required

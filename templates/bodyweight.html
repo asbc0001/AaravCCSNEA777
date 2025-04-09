@@ -1,0 +1,141 @@
+<!-- Template for bodyweight page -->
+{% extends "layout.html" %} 
+
+<!--Specify the page title to be shown in the browser tab-->
+{% block title %}
+    Bodyweight
+{% endblock %}
+
+{% block main %}
+    <h4 class="text-center">Add Bodyweight</h4>
+    <form action="/bodyweight" method="post" class="mb-5 form-container position-relative">
+        <div class="mb-3">
+            <label for="weight" class="form-label">Weight ({{ current_user.bodyweight_unit }})</label> <!-- Include user's bodyweight_unit in label -->
+            <input autocomplete="off" id="weight" class="form-control" name="weight"  type="text">
+        </div>
+        <div class="mb-3">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" name="date" id="date" value="{{ current_date }}" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary w-100" name="add_bodyweight">Add</button>
+    </form>
+
+    <h4 class="text-cente mt-5">Bodyweight history</h4>
+    <form action="/bodyweight" method="post" class="mb-3 form-container position-relative">
+        <div class="d-flex gap-3 mb-3">
+            <div class="w-50">
+                <label for="date" class="form-label">Start date</label>
+                <input type="date" name="start_date" id="start_date" value="{{ filter['start_date'] }}" class="form-control">
+            </div>
+            <div class="w-50">
+                <label for="date" class="form-label">End date</label>
+                <input type="date" name="end_date" id="end_date" value="{{ filter['end_date'] }}" class="form-control">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" name="bodyweight_history">View Weights</button>
+    </form>
+
+    <!-- Only attempt to show bodyweight data if form been submitted -->
+    {% if submitted %}
+        <!-- If bodyweight data exists -->
+        {% if bodyweights %}
+            <div class="set-table mx-auto">
+                <!-- Header row -->
+                <div class="set-table-header">
+                    <div>Date</div>
+                    <div>Time</div>
+                    <div>Weight</div>
+                    <div>Actions</div>
+                </div>
+                <!-- Define table of sets data -->
+                {% for bodyweight in bodyweights %}
+                    <div class="set-row">
+                        <div>{{ bodyweight.date }}</div>
+                        <div>{{ bodyweight.time }}</div>
+                        <div>{{ bodyweight.weight }}{{ current_user.sets_unit }}</div>
+                        <div class="set-icons">
+                            <!-- Edit icon button -->
+                            <button type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editBodyweightModal"
+                                    data-weight-id="{{ bodyweight.weight_id }}"
+                                    data-weight="{{ bodyweight.weight }}"
+                                    data-date="{{ bodyweight.date }}"
+                                    title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <!-- Delete icon button -->
+                            <form method="POST" action="/bodyweight" style="display: inline;">
+                                <input type="hidden" name="weight_id" value="{{ bodyweight.weight_id }}">
+                                <button type="submit" name="delete_weight" title="Delete">
+                                <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        
+        <!-- If not bodyweight data exists -->
+        {% else %}
+            <div class="text-center alert alert-warning mt-1">
+                No bodyweight data available for selected date range
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- edit_bodyweight modal pop-up form -->
+    <div class="modal fade" id="editBodyweightModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="/bodyweight" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Bodyweight</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Hidden field for weight_id -->
+                <input type="hidden" name="weight_id" id="edit_weight_id">
+
+                <div class="mb-3">
+                    <label for="edit_weight" class="form-label">Weight ({{ current_user.bodyweight_unit }})</label>
+                    <input type="text" name="new_weight" id="edit_weight" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="edit_date" class="form-label">Date</label>
+                    <input type="date" name="new_date" id="edit_date" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" name="edit_bodyweight">Edit</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </form>
+        </div>
+    </div>
+
+    <!-- JS for popup edit_bodyweight modal form -->
+    <script>
+        const editBodyweightModal = document.getElementById('editBodyweightModal');
+        if (editBodyweightModal) {
+            editBodyweightModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+    
+                // Extract values from data attributes
+                const weightId = button.getAttribute('data-weight-id');
+                const weight = button.getAttribute('data-weight');
+                const rawDate = button.getAttribute('data-date');
+    
+                // Convert date from dd/mm/yyyy format to YYYY-MM-DD
+                const [day, month, year] = rawDate.split('/');
+                const formattedDate = `${year}-${month}-${day}`;
+    
+                // Populate modal form fields
+                editBodyweightModal.querySelector('#edit_weight_id').value = weightId;
+                editBodyweightModal.querySelector('#edit_weight').value = weight;
+                editBodyweightModal.querySelector('#edit_date').value = formattedDate;
+            });
+        }
+    </script>
+{% endblock %}
