@@ -556,7 +556,7 @@ def Workouts():
             if new_date > current_date:
                 flash("Date must not be later than the current date", "negative")
                 errors = True
-            # Add new set if no errors have occured
+            # Edit set if no errors have occured
             if not errors:
                 new_estimated_1RM = float(new_weight) / (1.0278 - 0.0278 * int(new_reps))
                 new_exercise_id = Exercise.query.filter_by(name=new_exercise, user_id=current_user.user_id).first().exercise_id
@@ -588,7 +588,81 @@ def Workouts():
 @login_required
 def Exercises():
     if request.method == "GET":
+        # Get user's exercises sorted by category and name
+        exercises = sorted(current_user.exercises, key = lambda exercise: (exercise.category.lower(), exercise.name.lower()))
+        # Create exercises_dict with categories as keys and lists of exercises as values
+        exercises_dict = {}
+        for exercise in exercises:
+            exercises_dict.setdefault(exercise.category, []).append(exercise)
+        return render_template("exercises.html", exercises_dict = exercises_dict, categories = categories)
+    
+    if request.method == "POST":
+        categories_lower = [category.lower() for category in categories]
+        # If create_exercise form submitted:
+        if "create_exercise" in request.form:
+            name = request.form.get("exercise_name").strip()
+            category = request.form.get("category")
+            errors = False
+            if not name or not category:
+                flash("Must complete all fields", "negative")
+                errors = True
+            # Check whether name contains only letters
+            if not name.replace(" ", "").isalpha():
+                flash("Name must contain only letters", "negative")
+                errors = True
+            # Check whether exercise name already exists or whether it is a category name
+            name_exists = Exercise.query.filter(Exercise.user_id == current_user.user_id, Exercise.name.ilike(name.lower())).first()
+            if name_exists or name.lower() in categories_lower:
+                flash("An exercise or category with this name already exists", "negative")
+                errors = True
+            if not errors:
+                # Create new exercise and add to database
+                exercise = Exercise(name = name, category = category, user_id = current_user.user_id)
+                db.session.add(exercise)
+                db.session.commit()
+                flash("Exercise created", "positive")
+
+        # If edit_exercise popup form submitted:
+        if "edit_exercise" in request.form:
+            exercise_id = request.form.get("exercise_id")
+            new_name = request.form.get("new_exercise_name").strip()
+            new_category = request.form.get("new_category")
+            exercise = db.session.get(Exercise, exercise_id)
+            errors = False
+            if not new_name or not new_category:
+                flash("Must complete all fields", "negative")
+                errors = True
+            # Check whether name contains only letters
+            if not new_name.replace(" ", "").isalpha():
+                flash("Name must contain only letters", "negative")
+                errors = True
+            # Skip this check if the names are the same
+            if new_name.lower() != exercise.name.lower():
+                # Check whether exercise name already exists or whether it is a category name
+                name_exists = Exercise.query.filter(Exercise.user_id == current_user.user_id, Exercise.name.ilike(new_name.lower())).first()
+                if name_exists or new_name.lower() in categories_lower:
+                    flash("An exercise or category with this name already exists", "negative")
+                    errors = True
+            if not errors:
+                # Edit exercise
+                exercise.name = new_name
+                exercise.category = new_category
+                db.session.commit()
+                flash("Exercise edited", "positive")
         
+        # If confirm_deletion popup form submitted:
+        if "confirm_deletion" in request.form:
+            exercise_id = request.form.get("deleted_exercise_id")
+            confirmation = request.form.get("confirm_deletion")
+            if confirmation == "Yes":
+                # get the exercise using exercise_id and delete it
+                exercise = db.session.get(Exercise, exercise_id)
+                db.session.delete(exercise)
+                db.session.commit()
+                flash("Exercise deleted", "positive")
+            else:
+                flash("Deletion cancelled", "negative")
+        return redirect("/exercises")
 
 @app.route('/exercise_graph')
 @login_required

@@ -1,0 +1,203 @@
+<!-- Template for exercises page -->
+{% extends "layout.html" %}
+
+<!--Specify the page title to be shown in the browser tab-->
+{% block title %}
+    Exercises
+{% endblock %}
+
+{% block main %}
+    <!-- Define create_exercise form -->
+    <h4 class="text-center">Create exercises</h4>
+    <form action="/exercises" method="post" class="form-container">
+        <div class="mb-3">
+            <label for="exercise_name" class="form-label">Exercise name</label>
+            <input autocomplete="off" id="exercise_name" class="form-control" name="exercise_name"  type="text">
+        </div>
+        <div class="mb-3 position-relative">
+            <label for="categoryInput" class="form-label">Category</label>
+            <input type="text" id="categoryInput" name="category" class="form-control" autocomplete="off" readonly placeholder="Select a category">
+            <ul id="categorySuggestions" class="list-group position-absolute mt-1" style="display: none; width: 100%; z-index: 1000;"></ul>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" name="create_exercise">Create</button>
+        </div>
+    </form>
+
+    <!-- Javascript using jQuery for drop-down for categories -->
+    <script>
+        const categories = {{ categories | tojson }};
+    
+        $(document).ready(function() {
+            // Populate category dropdown on click
+            $("#categoryInput").on("click", function() {
+                const suggestionsHtml = categories.map(cat =>
+                    `<li class="list-group-item list-group-item-action">${cat}</li>`
+                ).join("");
+                $("#categorySuggestions").html(suggestionsHtml).show();
+            });
+    
+            // Select from dropdown
+            $(document).on("click", "#categorySuggestions li", function() {
+                $("#categoryInput").val($(this).text());
+                $("#categorySuggestions").hide();
+            });
+    
+            // Hide dropdown when clicking outside
+            $(document).click(function(event) {
+                if (!$(event.target).closest("#categoryInput, #categorySuggestions").length) {
+                    $("#categorySuggestions").hide();
+                }
+            });
+        });
+    </script>
+
+    <!-- Display all the users exercises -->
+    {% for category, exercises in exercises_dict.items() %}
+        <!-- Category header styled like workout-date -->
+        <div class="workout-date text-center">{{ category }}</div>
+
+        <!-- Table layout for exercises under the category -->
+        <div class="set-table mx-auto">
+            <div class="set-table-header extable">
+                <div>Name</div>
+                <div>Actions</div>
+            </div>
+
+            {% for exercise in exercises %}
+                <div class="set-row extable">
+                    <div>{{ exercise.name }}</div>
+                    <div class="set-icons">
+                        <!-- Edit icon button -->
+                        <button type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editExerciseModal"
+                            data-exercise-id="{{ exercise.exercise_id }}"
+                            data-name="{{ exercise.name }}"
+                            data-category="{{ exercise.category }}"
+                            title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <!-- Delete icon button -->
+                        <button type="button" class="icon-button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmDeletionModal"
+                                data-exercise-id="{{ exercise.exercise_id }}"
+                                title="Delete Exercise">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+    <!-- edit_exercise modal pop-up form -->
+    <div class="modal fade" id="editExerciseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="/exercises" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Set</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Hidden exercise_id atribute-->
+                <input type="hidden" name="exercise_id" id="edit_exercise_id">
+                <div class="mb-3">
+                    <label for="editExerciseName" class="form-label">Exercise name</label>
+                    <input autocomplete="off" id="editExerciseName" class="form-control" name="new_exercise_name"  type="text">
+                </div> 
+                <div class="mb-3 position-relative">
+                    <label for="editCategoryInput" class="form-label">Category</label>
+                    <input type="text" id="editCategoryInput" name="new_category" class="form-control" autocomplete="off" readonly placeholder="Select a category">
+                    <ul id="editCategorySuggestions" class="list-group position-absolute mt-1" style="display: none; width: 100%; z-index: 1000;"></ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+            <button type="submit" class="btn btn-primary"name="edit_exercise">Edit Exercise</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </form>
+        </div>
+    </div>
+
+    <!-- Javascript using jQuery for new_category dropdown-->
+    <script>
+    
+        $(document).ready(function() {
+            $("#editCategoryInput").on("click", function() {
+                const suggestionsHtml = categories.map(cat =>
+                    `<li class="list-group-item list-group-item-action">${cat}</li>`
+                ).join("");
+                $("#editCategorySuggestions").html(suggestionsHtml).show();
+            });
+    
+            $(document).on("click", "#editCategorySuggestions li", function() {
+                $("#editCategoryInput").val($(this).text());
+                $("#editCategorySuggestions").hide();
+            });
+    
+            $(document).click(function(event) {
+                if (!$(event.target).closest("#editCategoryInput, #editCategorySuggestions").length) {
+                    $("#editCategorySuggestions").hide();
+                }
+            });
+        });
+    </script>
+
+    <!-- JavaScript for the pop-up edit_exercise modal form -->
+    <script>
+        // edit_exercise modal
+        const editExerciseModal = document.getElementById('editExerciseModal');
+        if (editExerciseModal) {
+            editExerciseModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+        
+            // Extract exercise data from button
+            const exerciseId = button.getAttribute('data-exercise-id');
+            const exerciseName = button.getAttribute('data-name');
+            const category = button.getAttribute('data-category');
+        
+            // Populate modal fields
+            editExerciseModal.querySelector('#edit_exercise_id').value = exerciseId;
+            editExerciseModal.querySelector('#editExerciseName').value = exerciseName;
+            editExerciseModal.querySelector('#editCategoryInput').value = category;
+            });
+        }
+    </script>
+
+    <!-- confirm_deletion modal pop-up form -->
+    <div class="modal fade" id="confirmDeletionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="/exercises" class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Delete exercise?</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+            <p>Are you sure you want to delete the exercise? This will delete all of its sets and goals</p>
+            <input type="hidden" name="deleted_exercise_id" id="deleteExerciseId">
+            </div>
+            <div class="modal-footer">
+            <button type="submit" name="confirm_deletion" value="Yes" class="btn btn-danger">Yes</button>
+            <button type="submit" name="confirm_deletion" value="No" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+            </div>
+        </form>
+        </div>
+    </div>
+
+    <!-- Javascript for the cofnirm_deletion form -->
+    <script>
+        const deleteModal = document.getElementById('confirmDeletionModal');
+        if (deleteModal) {
+          deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const exerciseId = button.getAttribute('data-exercise-id');
+            
+            // Update modal content
+            deleteModal.querySelector('#deleteExerciseId').value = exerciseId;
+          });
+        }
+    </script>
+
+{% endblock %}
+

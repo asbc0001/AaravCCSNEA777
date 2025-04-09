@@ -255,3 +255,7 @@
         .icon-button:hover {
             color: #007bff;
         }
+
+        .extable {
+            grid-template-columns: 2fr auto !important;
+        }
