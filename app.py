@@ -12,6 +12,7 @@ import jwt                                                                      
 from time import time
 from threading import Thread
 from collections import defaultdict, OrderedDict
+from dateutil.relativedelta import relativedelta
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
@@ -664,15 +665,138 @@ def Exercises():
                 flash("Deletion cancelled", "negative")
         return redirect("/exercises")
 
-@app.route('/exercise_graph')
+@app.route('/exercise_graph', methods = ["GET", "POST"])
 @login_required
 def Exercise_Graph():
-    return render_template("exercise_graph.html")
+    # Define boolean to keep track of whether the user has submitted the exercise_graph form or not
+    submitted = False
+    # Get string of the date of a month ago in YYYY-MM-DD format
+    one_month_ago = datetime.date.today() - relativedelta(months=1)
+    start_date = one_month_ago.strftime("%Y-%m-%d")
+    # Get string of the current date in YYYY-MM-DD format
+    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    # Define dictionary holding default values of fields in exercise_graph form
+    filter = {"exercise": "", "metric": "", "start_date": start_date, "end_date": current_date}
+    # Get a list of the names of the current user's exercises using the relationship between the User and Exercise models
+    exercise_names = sorted([e.name for e in current_user.exercises])
+    # Define list of available metrics
+    metrics = ["Highest Estimated 1RM", "Highest Weight", "Highest Reps", "Sets", "Total Reps", "Total Volume"]
+    # Create empty final_data 2d list
+    final_data = []
+    
+    if request.method == "POST":
+        submitted = True
+        exercise = request.form.get("exercise")
+        metric = request.form.get("metric")
+        start_date = request.form.get("start_date")
+        end_date = request.form.get("end_date")
+        errors = False
+        if not exercise or not metric or not start_date or not end_date:
+            flash("Must complete all fields", "negative")
+            errors = True
+        if exercise not in exercise_names:
+            flash("Must enter a valid exercise", "negative")
+            errors = True
+        if start_date > end_date or start_date > current_date or end_date > current_date:
+            flash("Start date must not be later than end date, and neither can be later than current date", "negative")
+            errors = True
+        if not errors:
+            # Update values in filter
+            filter["exercise"] = exercise
+            filter["metric"] = metric
+            filter["start_date"] = start_date
+            filter["end_date"] = end_date
+            # Convert dates to correct format for database
+            start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+            # Get the exercise_id of the exercise
+            exercise_id = Exercise.query.filter_by(name=exercise, user_id=current_user.user_id).first().exercise_id
+            # Create and execute query to get all sets for the exercise within the date range
+            query = Set.query.filter(Set.exercise_id == exercise_id, Set.date.between(start_date_obj, end_date_obj))
+            sets = query.all()
+            
+            # Get all unique dates from the sets, and sort them from oldest to newest
+            unique_dates = sorted(set(set.date for set in sets))
+            for date in unique_dates:
+                # Create a new list of only the sets that match the date
+                sets_on_date = [set for set in sets if set.date == date]
+                # Check which metric needs to be calculated and calculate the value for the date
+                if metric == "Highest Estimated 1RM":
+                    metric_value = max(set.estimated_1RM for set in sets_on_date)
+                elif metric == "Highest Weight":
+                    metric_value = max(set.weight for set in sets_on_date)
+                elif metric == "Highest Reps":
+                    metric_value = max(set.reps for set in sets_on_date)
+                elif metric == "Sets":
+                    metric_value = len(sets_on_date)
+                elif metric == "Total Reps":
+                    metric_value = sum(set.reps for set in sets_on_date)
+                elif metric == "Total Volume":
+                    metric_value = sum(set.weight * set.reps for set in sets_on_date)
+                # Append entry to final_data
+                final_data.append([date.strftime("%Y-%m-%d"), round(metric_value, 1)])
 
-@app.route('/workout_graph')
+    return render_template("exercise_graph.html", submitted = submitted, filter= filter, exercises=exercise_names, metrics = metrics, set_data = final_data)
+
+@app.route('/workout_graph', methods = ["GET", "POST"])
 @login_required
 def Workout_Graph():
-    return "Workout graph"
+    # Define boolean to keep track of whether the user has submitted the workout_graph form or not
+    submitted = False
+    # Get string of the date of a month ago in YYYY-MM-DD format
+    one_month_ago = datetime.date.today() - relativedelta(months=1)
+    start_date = one_month_ago.strftime("%Y-%m-%d")
+    # Get string of the current date in YYYY-MM-DD format
+    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    # Define dictionary holding default values of fields in workout_graph form
+    filter = {"metric": "", "start_date": start_date, "end_date": current_date}
+    # Define list of available metrics
+    metrics = ["Total Sets", "Total Reps", "Total Volume"]
+    # Create empty final_data 2d list
+    final_data = []
+    
+    if request.method == "POST":
+        submitted = True
+        metric = request.form.get("metric")
+        start_date = request.form.get("start_date")
+        end_date = request.form.get("end_date")
+        errors = False
+        if not metric or not start_date or not end_date:
+            flash("Must complete all fields", "negative")
+            errors = True
+        if start_date > end_date or start_date > current_date or end_date > current_date:
+            flash("Start date must not be later than end date, and neither can be later than current date", "negative")
+            errors = True
+        if not errors:
+            # Update values in filter
+
+            filter["metric"] = metric
+            filter["start_date"] = start_date
+            filter["end_date"] = end_date
+            # Convert dates to correct format for database
+            start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+            # Create and execute query to get all of the users sets within the date range
+            query = Set.query.filter(Set.user_id == current_user.user_id, Set.date.between(start_date_obj, end_date_obj))
+            sets = query.all()
+            
+            # Get all unique dates from the sets, and sort them from oldest to newest
+            unique_dates = sorted(set(set.date for set in sets))
+            for date in unique_dates:
+                # Create a new list of only the sets that match the date
+                sets_on_date = [set for set in sets if set.date == date]
+                # Check which metric needs to be calculated and calculate the value for the date
+                if metric == "Total Sets":
+                    metric_value = len(sets_on_date)
+                elif metric == "Total Reps":
+                    metric_value = sum(set.reps for set in sets_on_date)
+                elif metric == "Total Volume":
+                    metric_value = sum(set.weight * set.reps for set in sets_on_date)
+                # Append entry to final_data
+                final_data.append([date.strftime("%Y-%m-%d"), round(metric_value, 1)])
+
+    
+    return render_template("workout_graph.html", submitted = submitted, filter= filter, metrics = metrics, set_data = final_data)
 
 @app.route('/workout_chart')
 @login_required

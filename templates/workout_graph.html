@@ -1,20 +1,14 @@
-<!-- Template for exercise_graph page -->
-{% extends "layout.html" %} <!--This page's content extends from the placeholder defined in layout.html-->
+<!-- Template for workout_graph page -->
+{% extends "layout.html" %}
 
 <!--Specify the page title to be shown in the browser tab-->
 {% block title %} 
-    Exercise Graph
+    Workout Graph
 {% endblock %}
 
 {% block main %}
-    <h4 class="text-center">Exercise progress graph</h4>
-        <form action="/exercise_graph" method="post" class="mb-5 form-container position-relative">
-            <!-- Exercise autocomplete dropdown -->
-            <div class="mb-3 position-relative">
-                <label for="exerciseInput" class="form-label">Exercise</label>
-                <input type="text" id="exerciseInput" name="exercise" class="form-control" value="{{ filter['exercise'] }}" autocomplete="off">
-                <ul id="exerciseSuggestions" class="list-group position-absolute mt-1" style="display: none; width: 100%; z-index: 1000;"></ul>
-            </div>
+    <h4 class="text-center">Workout progress graph</h4>
+        <form action="/workout_graph" method="post" class="mb-5 form-container position-relative">
             <!-- Metric dropdown-->
             <div class="mb-3 position-relative">
                 <label for="metricInput" class="form-label">Metric</label>
@@ -32,41 +26,8 @@
                     <input type="date" name="end_date" id="end_date" value="{{ filter['end_date'] }}" class="form-control">
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100" name="exercise_graph">View graph</button>
+            <button type="submit" class="btn btn-primary w-100" name="workout_graph">View graph</button>
         </form>
-
-        <!-- Javascript for exercises autocomplete dropdown -->
-        <script>
-            const exercises = {{ exercises | tojson }};
-            
-            $(document).ready(function() {
-                // Handle input event and show matching exercise suggestions
-                $("#exerciseInput").on("input", function() {
-                    let query = $(this).val().toLowerCase();
-                    let matches = exercises.filter(ex => ex.toLowerCase().includes(query));
-                    
-                    if (matches.length) {
-                        let suggestionsHtml = matches.map(ex => `<li class="list-group-item list-group-item-action">${ex}</li>`).join("");
-                        $("#exerciseSuggestions").html(suggestionsHtml).show();
-                    } else {
-                        $("#exerciseSuggestions").hide();
-                    }
-                });
-                
-                // Fill input field with selected suggestion and hide list
-                $(document).on("click", "#exerciseSuggestions li", function() {
-                    $("#exerciseInput").val($(this).text());
-                    $("#exerciseSuggestions").hide();
-                });
-                
-                // Hide suggestions when clicking outside the input field or list
-                $(document).click(function(event) {
-                    if (!$(event.target).closest("#exerciseInput, #exerciseSuggestions").length) {
-                        $("#exerciseSuggestions").hide();
-                    }
-                });
-            });
-        </script>
 
 
         <!-- JavaScript for metric autocomplete dropdown -->
@@ -102,7 +63,7 @@
             <!-- If there is set data -->
             {% if set_data %}
                 <div class="chart-container" style="height: 400px; overflow-x: auto;">
-                    <canvas id="exerciseChart" height="100"></canvas>
+                    <canvas id="workoutChart" height="100"></canvas>
                 </div>
 
                 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -115,8 +76,8 @@
                     });
                     const dataPoints = rawData.map(row => row[1]);
 
-                    const ctx = document.getElementById('exerciseChart').getContext('2d');
-                    const exerciseChart = new Chart(ctx, {
+                    const ctx = document.getElementById('workoutChart').getContext('2d');
+                    const workoutChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: labels,
@@ -195,7 +156,7 @@
             <!-- If there is no set data -->
             {% else %}
                 <div class="text-center alert alert-warning mt-1">
-                    No sets found for the selected exercise / date range
+                    No sets found for the selected date range
                 </div>
             {% endif %}
         {% endif %}
