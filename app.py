@@ -769,7 +769,6 @@ def Workout_Graph():
             errors = True
         if not errors:
             # Update values in filter
-
             filter["metric"] = metric
             filter["start_date"] = start_date
             filter["end_date"] = end_date
