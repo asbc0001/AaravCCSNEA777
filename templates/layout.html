@@ -46,14 +46,13 @@
                         </li>
                         <!-- Dropdown menu for Analysis section pages -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link {% if request.endpoint == 'Exercise_Graph' or request.endpoint == 'Workout_Graph' or request.endpoint == 'Workout_Chart' %}active{% endif %} 
+                            <a class="nav-link {% if request.endpoint == 'Exercise_Graph' or request.endpoint == 'Workout_Graph'%}active{% endif %} 
                             dropdown-toggle" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Analysis
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item {% if request.endpoint == 'Exercise_Graph'%}active{% endif %}" href="{{ url_for('Exercise_Graph') }}">Exercise Graph</a>
                                 <a class="dropdown-item {% if request.endpoint == 'Workout_Graph'%}active{% endif %}" href="{{ url_for('Workout_Graph') }}">Workout Graph</a>
-                                <a class="dropdown-item {% if request.endpoint == 'Workout_Chart'%}active{% endif %}" href="{{ url_for('Workout_Chart') }}">Workout Breakdown Chart</a>
                             </div>
                         </li>
                         <!-- Dropdown menu for Bodyweight section pages -->
