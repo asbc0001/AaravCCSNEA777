@@ -908,10 +908,54 @@ def Bodyweights():
     return render_template("bodyweight.html", submitted = submitted, current_date = current_date, filter = filter, bodyweights = bodyweights)
     
 
-@app.route('/bodyweight_graph')
+@app.route('/bodyweight_graph', methods = ["GET", "POST"])
 @login_required
 def Bodyweight_Graph():
-    return "Bodyweight graph"
+    # Define boolean to keep track of whether the user has submitted the bodyweight_graph form or not
+    submitted = False
+    # Get string of the date of a month ago in YYYY-MM-DD format
+    one_month_ago = datetime.date.today() - relativedelta(months=1)
+    start_date = one_month_ago.strftime("%Y-%m-%d")
+    # Get string of the current date in YYYY-MM-DD format
+    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    # Define dictionary holding default values of fields in bodyweight_graph form
+    filter = {"start_date": start_date, "end_date": current_date}
+    # Create empty final_data 2d list
+    final_data = []
+    
+    if request.method == "POST":
+        submitted = True
+        start_date = request.form.get("start_date")
+        end_date = request.form.get("end_date")
+        errors = False
+        if not start_date or not end_date:
+            flash("Must complete all fields", "negative")
+            errors = True
+        if start_date > end_date or start_date > current_date or end_date > current_date:
+            flash("Start date must not be later than end date, and neither can be later than current date", "negative")
+            errors = True
+        if not errors:
+            # Update values in filter
+            filter["start_date"] = start_date
+            filter["end_date"] = end_date
+            # Convert dates to correct format for database
+            start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+            # Create and execute query to get all of the users bodyweights within the date range
+            query = Bodyweight.query.filter(Bodyweight.user_id == current_user.user_id, Bodyweight.date.between(start_date_obj, end_date_obj))
+            bodyweights = query.all()
+            
+            # Get all unique dates from the sets, and sort them from oldest to newest
+            unique_dates = sorted(set(bodyweight.date for bodyweight in bodyweights))
+            for date in unique_dates:
+                # Create a new list of only the bodyweights that match the date
+                bodyweights_on_date = [bodyweight for bodyweight in bodyweights if bodyweight.date == date]
+                # Calculate average bodyweight for the date
+                average_weight = sum(bodyweight.weight for bodyweight in bodyweights_on_date) / len(bodyweights_on_date)
+                # Append date and average to final_data
+                final_data.append([date.strftime("%Y-%m-%d"), round(average_weight, 1)])
+    
+    return render_template("bodyweight_graph.html", submitted = submitted, filter= filter, bodyweight_data = final_data)
 
 @app.route('/settings')
 @login_required

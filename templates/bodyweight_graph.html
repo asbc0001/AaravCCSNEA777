@@ -1,0 +1,138 @@
+<!-- Template for bodyweight_graph page -->
+{% extends "layout.html" %}
+
+<!--Specify the page title to be shown in the browser tab-->
+{% block title %} 
+    Bodyweight Graph
+{% endblock %}
+
+{% block main %}
+    <h4 class="text-center">Bodyweight graph</h4>
+        <form action="/bodyweight_graph" method="post" class="mb-5 form-container position-relative">
+            <!-- Start and end date -->
+            <div class="d-flex gap-3 mb-3">
+                <div class="w-50">
+                    <label for="date" class="form-label">Start date</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ filter['start_date'] }}" class="form-control">
+                </div>
+                <div class="w-50">
+                    <label for="date" class="form-label">End date</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ filter['end_date'] }}" class="form-control">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100" name="bodyweight_graph">View graph</button>
+        </form>
+
+
+        <!-- If the form has been submitted -->
+        {% if submitted  %}
+            <!-- If there is bodyweight data -->
+            {% if bodyweight_data %}
+                <div class="chart-container" style="height: 400px; overflow-x: auto;">
+                    <canvas id="bodyweightGraph" height="100"></canvas>
+                </div>
+
+                <script>
+                    const rawData = {{ bodyweight_data | tojson }};
+                    // Convert to { x: date, y: value } format
+                    const dataPoints = rawData.map(row => ({
+                        x: row[0],
+                        y: row[1]
+                    }));
+                
+                    const ctx = document.getElementById('bodyweightGraph').getContext('2d');
+                    const bodyweightGraph = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            datasets: [{
+                                label: 'Weight',
+                                data: dataPoints,
+                                fill: true,
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                borderColor: '#007bff',
+                                tension: 0, // make lines straight
+                                pointRadius: 5,
+                                pointHoverRadius: 7
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 20,
+                                    right: 20,
+                                    bottom: 20,
+                                    left: 20
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `Value: ${context.raw.y}`;
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'time',
+                                    time: {
+                                        unit: 'day',
+                                        displayFormats: {
+                                            day: 'dd/MM/yyyy'
+                                        },
+                                        tooltipFormat: 'dd/MM/yyyy'
+                                    },
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 30,
+                                        autoSkip: true,
+                                        font: {
+                                            size: 14
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Date',
+                                        font: {
+                                            size: 16,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        font: {
+                                            size: 14
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Weight',
+                                        font: {
+                                            size: 16,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                </script>
+
+            <!-- If there is no set data -->
+            {% else %}
+                <div class="text-center alert alert-warning mt-1">
+                    No bodyweights found for the selected date range
+                </div>
+            {% endif %}
+        {% endif %}
+
+{% endblock %}
+
