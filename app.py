@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, flash, request                                                                                                           # type: ignore
+from flask import Flask, render_template, redirect, flash, request, send_file                                                                                                           # type: ignore
 from typing import List
 from flask_sqlalchemy import SQLAlchemy                                                                                                                              # type: ignore
 import sqlalchemy as sa                                                                                                                                              # type: ignore
@@ -13,6 +13,9 @@ from time import time
 from threading import Thread
 from collections import defaultdict, OrderedDict
 from dateutil.relativedelta import relativedelta                                                                                                                                                                        #type:ignore
+import zipfile
+import io
+import csv
 
 # Import list of dictionaries of default exercises from defaultexercises.py
 from defaultexercises import default_exercises                                                                                                                               #type:ignore
@@ -957,10 +960,98 @@ def Bodyweight_Graph():
     
     return render_template("bodyweight_graph.html", submitted = submitted, filter= filter, bodyweight_data = final_data)
 
-@app.route('/settings')
+@app.route("/settings", methods=["GET", "POST"])
 @login_required
 def Settings():
-    return "Settings"
+    # Function for converting weights between pounds and kilos
+    def convert_weight(weight, unit):
+        return round(weight * 2.20462, 1) if unit == "lb" else round(weight / 2.20462, 1)
+    
+    # Create a downloadable CSV file of users sets data
+    def export_sets_to_csv(user):
+        # Create an in-memory string buffer to hold the CSV data
+        output = io.StringIO()
+        writer = csv.writer(output)
+        # Write header row
+        writer.writerow(["Date", "Exercise", "Category", "Weight", "Unit", "Reps", "1RM"])
+        # Write each set's data as a row
+        for set in user.sets:
+            writer.writerow([set.date, set.exercise.name, set.exercise.category, set.weight, user.sets_unit, set.reps, set.estimated_1RM])
+        output.seek(0)
+        # Return CSV data as a downloadable byte stream
+        return io.BytesIO(output.getvalue().encode())
+
+    # Create a downloadable CSV file of users bodyweight data
+    def export_bodyweights_to_csv(user):
+        # Create an in-memory string buffer to hold the CSV data
+        output = io.StringIO()
+        writer = csv.writer(output)
+        # Write header row
+        writer.writerow(["Date", "Time", "Weight", "Unit"])
+        # Write each bodyweights data as a row
+        for bodyweight in user.bodyweights:
+            writer.writerow([bodyweight.date, bodyweight.time_entered, bodyweight.weight, user.bodyweight_unit])
+        output.seek(0)
+        # Return CSV data as a downloadable byte stream
+        return io.BytesIO(output.getvalue().encode())
+
+    if request.method == "GET":
+        return render_template("settings.html")
+
+    if request.method == "POST":
+        # Update set unit if sets_unit toggled
+        if 'sets_unit' in request.form:
+            new_unit = request.form['sets_unit']
+            if current_user.sets_unit != new_unit:
+                # Update user's sets_unit
+                current_user.sets_unit = new_unit
+                db.session.commit()
+                # Recalculate weights and 1RMs
+                for set in current_user.sets:
+                    set.weight = convert_weight(set.weight, new_unit)
+                    set.estimated_1RM = round(set.weight / (1.0278 - 0.0278 * set.reps), 1)
+                for goal in current_user.goals:
+                    goal.target = convert_weight(goal.target, new_unit)
+                db.session.commit()
+                flash("Set unit changed", "positive")
+
+        # Update bodyweight unit if bodyweight_unit toggled
+        elif 'bodyweight_unit' in request.form:
+            new_unit = request.form['bodyweight_unit']
+            if new_unit in ['kg', 'lb'] and current_user.bodyweight_unit != new_unit:
+                # Update bodyweight_unit
+                current_user.bodyweight_unit = new_unit
+                db.session.commit()
+                # Recalculate bodyweight weights
+                for bodyweight in current_user.bodyweights:
+                    bodyweight.weight = convert_weight(bodyweight.weight, new_unit)
+                db.session.commit()
+                flash("Bodyweight unit changed", "positive")
+
+        # Toggle email report preference
+        if "receive_reports" in request.form:
+            new_pref = True if request.form.get("receive_reports") == "yes" else False
+            if current_user.receive_reports != new_pref:
+                # Update receive_reports
+                current_user.receive_reports = new_pref
+                db.session.commit()
+                flash("Email reports preference updated", "positive")
+
+        # Export sets + bodyweights as a ZIP file of 2 CSVs if export_data button pressed
+        elif 'export_data' in request.form:
+            sets_csv = export_sets_to_csv(current_user)
+            bodyweights_csv = export_bodyweights_to_csv(current_user)
+
+            zip_buffer = io.BytesIO()
+            # Create a zip file and add add the CSVs to it
+            with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+                zip_file.writestr('sets.csv', sets_csv.getvalue())
+                zip_file.writestr('bodyweights.csv', bodyweights_csv.getvalue())
+            zip_buffer.seek(0)
+            # Send zip file to user as a downloadable file called workout_data.zip
+            return send_file(zip_buffer, as_attachment=True, download_name='workout_data.zip', mimetype='application/zip')
+
+        return redirect("/settings")
 
 @app.route('/goals')
 @login_required
