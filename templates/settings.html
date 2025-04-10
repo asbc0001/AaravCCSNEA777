@@ -20,7 +20,6 @@
                 </button>
             </div>
         </div>
-
         <!-- Bodyweight unit toggle -->
         <div class="mb-4">
             <div class="form-label">Bodyweight weight unit</div>
@@ -33,20 +32,6 @@
                 </button>
             </div>
         </div>
-
-        <!-- Email reports toggle -->
-        <div class="mb-4">
-            <div class="form-label">Receive email reports?</div>
-            <div class="settings-toggle">
-                <button type="submit" name="receive_reports" value="yes" class="btn-toggle {% if current_user.receive_reports %}active{% endif %}">
-                    Yes
-                </button>
-                <button type="submit" name="receive_reports" value="no" class="btn-toggle {% if not current_user.receive_reports %}active{% endif %}">
-                    No
-                </button>
-            </div>
-        </div>
-
         <!-- Export button -->
         <div class="settings-toggle mt-3">
             <button type="submit" name="export_data" class="btn-toggle">Export data as CSV</button>

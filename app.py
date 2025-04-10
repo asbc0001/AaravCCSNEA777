@@ -63,7 +63,6 @@ class User(UserMixin, db.Model):
     password_hash: sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(255))
     sets_unit: sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(2), default="kg")
     bodyweight_unit: sa.orm.Mapped[str] = sa.orm.mapped_column(sa.String(2), default="kg")
-    receive_reports: sa.orm.Mapped[bool] = sa.orm.mapped_column(sa.Boolean, default = True)
     
     # Define relationship to Bodyweight model
     bodyweights: sa.orm.Mapped[list["Bodyweight"]] = sa.orm.relationship(back_populates="user")
@@ -1029,15 +1028,6 @@ def Settings():
                 db.session.commit()
                 flash("Bodyweight unit changed", "positive")
 
-        # Toggle email report preference
-        if "receive_reports" in request.form:
-            new_pref = True if request.form.get("receive_reports") == "yes" else False
-            if current_user.receive_reports != new_pref:
-                # Update receive_reports
-                current_user.receive_reports = new_pref
-                db.session.commit()
-                flash("Email reports preference updated", "positive")
-
         # Export sets + bodyweights as a ZIP file of 2 CSVs if export_data button pressed
         elif 'export_data' in request.form:
             sets_csv = export_sets_to_csv(current_user)
@@ -1120,8 +1110,3 @@ def Goals():
             flash("Goal deleted", "positive")
                
         return redirect("/goals")
-
-@app.route('/1rm_prediction')
-@login_required
-def Prediction():
-    return "1RM Prediction"
