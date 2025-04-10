@@ -28,8 +28,8 @@ app = Flask(__name__)
 
 # Retrieve secret key from environment variable and set it
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-# Configure the SQLite database URI by joining the base directory with 'tracker.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+os.path.join(basedirectory, 'tracker.db')
+# Configure the SQLite database URI
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
 # Set the session lifetime to 30 minutes
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=30)
 
