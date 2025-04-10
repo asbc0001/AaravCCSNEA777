@@ -1,0 +1,94 @@
+<!-- Template for goals page -->
+{% extends "layout.html" %}
+
+{% block title %}
+    Goals
+{% endblock %}
+
+{% block main %}
+    <!-- Define add_goal form -->
+    <h4 class="text-center">Add 1RM goal</h4>
+    <form action="/goals" method="post" class="mb-5 form-container position-relative">
+        <!-- Exercise Autocomplete Dropdown -->
+        <div class="mb-3 position-relative">
+            <label for="exerciseInput" class="form-label">Exercise</label>
+            <input type="text" id="exerciseInput" name="exercise" class="form-control" autocomplete="off">
+            <ul id="exerciseSuggestions" class="list-group position-absolute mt-1" style="display: none; width: 100%; z-index: 1000;"></ul>
+        </div>
+        <div class="mb-3">
+            <label for="target" class="form-label">Target 1RM ({{ current_user.sets_unit }})</label> <!-- Include user's sets_unit in label -->
+            <input autocomplete="off" id="target" class="form-control" name="target"  type="text">
+        </div>
+        <button type="submit" class="btn btn-primary w-100" name="add_goal">Add</button>
+    </form>
+
+
+    <!-- Javascript for exercise autocomplete dropdown -->
+    <script>
+        const exercises = {{ exercises | tojson }};
+        
+        $(document).ready(function() {
+            // Handle input event and show matching exercise suggestions
+            $("#exerciseInput").on("input", function() {
+                let query = $(this).val().toLowerCase();
+                let matches = exercises.filter(ex => ex.toLowerCase().includes(query));
+                
+                if (matches.length) {
+                    let suggestionsHtml = matches.map(ex => `<li class="list-group-item list-group-item-action">${ex}</li>`).join("");
+                    $("#exerciseSuggestions").html(suggestionsHtml).show();
+                } else {
+                    $("#exerciseSuggestions").hide();
+                }
+            });
+            
+            // Fill input field with selected suggestion and hide list
+            $(document).on("click", "#exerciseSuggestions li", function() {
+                $("#exerciseInput").val($(this).text());
+                $("#exerciseSuggestions").hide();
+            });
+            
+            // Hide suggestions when clicking outside the input field or list
+            $(document).click(function(event) {
+                if (!$(event.target).closest("#exerciseInput, #exerciseSuggestions").length) {
+                    $("#exerciseSuggestions").hide();
+                }
+            });
+        });
+    </script>
+
+    <!-- Display all goals organsied by category and within that by exercise -->
+    <h4 class="text-center mb-0">Goals</h4>
+    {% for category, exercises in goals_dict.items() %}
+        <div class="workout-date text-center">{{ category }}</div>
+
+        {% for exercise_name, goals in exercises.items() %}
+            <div class="exercise-header">{{ exercise_name }}</div>
+
+            <div class="set-table mx-auto">
+                <div class="set-table-header">
+                    <div>Current 1RM ({{ current_user.sets_unit }})</div>
+                    <div>Progress</div>
+                    <div>Target ({{ current_user.sets_unit }})</div>
+                    <div>Actions</div>
+                </div>
+
+                {% for goal in goals %}
+                    <div class="set-row">
+                        <div>{{ goal.highest_1rm }}{{ current_user.sets_unit }}</div>
+                        <div>{{ goal.percentage }}%</div>
+                        <div>{{ goal.target }}{{ current_user.sets_unit }}</div>
+                        <div class="set-icons">
+                            <form method="POST" action="/goals" style="display:inline;">
+                                <input type="hidden" name="goal_id" value="{{ goal.goal_id }}">
+                                <button type="submit" name="delete_goal" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+{% endblock %}

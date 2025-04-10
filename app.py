@@ -138,7 +138,7 @@ class Exercise(db.Model):
 class Goal(db.Model):
     goal_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, primary_key=True, autoincrement=True)
     target: sa.orm.Mapped[float] = sa.orm.mapped_column(sa.Float)
-    date_entered: sa.orm.Mapped[datetime.date] = sa.orm.mapped_column(sa.Date)
+    date_entered: sa.orm.Mapped[datetime.date] = sa.orm.mapped_column(sa.Date, default=datetime.date.today)
     user_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, sa.ForeignKey("user.user_id"))
     exercise_id: sa.orm.Mapped[int] = sa.orm.mapped_column(sa.Integer, sa.ForeignKey("exercise.exercise_id"))
     
@@ -910,7 +910,7 @@ def Bodyweights():
                  
     return render_template("bodyweight.html", submitted = submitted, current_date = current_date, filter = filter, bodyweights = bodyweights)
     
-
+# Route for allowing users to view graphs of their bodyweight data
 @app.route('/bodyweight_graph', methods = ["GET", "POST"])
 @login_required
 def Bodyweight_Graph():
@@ -960,6 +960,7 @@ def Bodyweight_Graph():
     
     return render_template("bodyweight_graph.html", submitted = submitted, filter= filter, bodyweight_data = final_data)
 
+# Route for allowing users to change settings and export data
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def Settings():
@@ -1053,10 +1054,72 @@ def Settings():
 
         return redirect("/settings")
 
-@app.route('/goals')
+# Route for allowing users to add /edit / view 1RM goals
+@app.route('/goals', methods = ["GET", "POST"])
 @login_required
 def Goals():
-    return "Goals"
+    # Get list of the names of the current user's exercises
+    exercise_names = sorted([e.name for e in current_user.exercises])
+    if request.method == "GET":
+        # Get user's goals
+        goals = Goal.query.filter_by(user_id=current_user.user_id).all()
+        # Create empty goals_dict structure
+        goals_dict = defaultdict(lambda: defaultdict(list))
+
+        for goal in goals:
+            # Uses relationship between goal and exercises table to get the goal's exercise
+            exercise = goal.exercise
+            # Get all sets of this exercise
+            query = Set.query.filter(Set.exercise_id == exercise.exercise_id)
+            sets = query.all()
+            # Calculate the highest 1RM recorded for the exercise
+            highest_1rm = max((set.estimated_1RM for set in sets), default=0)
+            # Calculate percentage progress, capped at 100
+            percentage = min(round((highest_1rm / goal.target) * 100, 1), 100)
+            # Add the goal's data to goals_dict
+            goals_dict[exercise.category][exercise.name].append({
+                "target": goal.target,
+                "highest_1rm": highest_1rm,
+                "percentage": percentage,
+                "goal_id": goal.goal_id
+            })
+        # Sort goals_dict by categories and exercises alphabetically
+        goals_dict = {key: dict(sorted(value.items())) for key, value in sorted(goals_dict.items())}
+        return render_template("goals.html", exercises = exercise_names, goals_dict = goals_dict)
+    
+    if request.method == "POST":
+        if 'add_goal' in request.form:
+            errors = False
+            exercise = request.form.get("exercise")
+            target = request.form.get("target")
+            if not exercise or not target:
+                flash("Must complete all fields", "negative")
+                errors = True
+            if exercise not in exercise_names:
+                flash("Must enter a valid exercise", "negative")
+                errors = True
+            if not is_positive_float(target):
+                flash("Weight must be a number greater than 0", "negative")
+                errors = True
+            # Add new goal if no errors have occured
+            if not errors:
+                # Get exercise_id of the exercise
+                exercise_id = Exercise.query.filter_by(name=exercise, user_id=current_user.user_id).first().exercise_id
+                new_goal = Goal(target = round(float(target), 1), user_id = current_user.user_id, exercise_id = exercise_id)
+                db.session.add(new_goal)
+                db.session.commit()
+                flash("Goal added", "positive")
+        
+        # Check if delete button pressed for a goal
+        if 'delete_goal' in request.form:
+            goal_id = request.form.get("goal_id")
+            # Get goal to delete using goal_id
+            goal = db.session.get(Goal, goal_id)
+            db.session.delete(goal)
+            db.session.commit()
+            flash("Goal deleted", "positive")
+               
+        return redirect("/goals")
 
 @app.route('/1rm_prediction')
 @login_required
